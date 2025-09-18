@@ -65,7 +65,9 @@ fit_models <- function() {
       benthic_models <- benthic_data |>
         group_by(region, subregion, ecoregion, category) |>
         nest() |>
-        mutate(name = paste(ecoregion, category, sep = "_"))
+        mutate(name = paste(ecoregion, category, sep = "_"),
+               name = str_replace_all(name, "/", " and ")
+               )
       ## ----end
       benthic_models
     }
@@ -133,27 +135,31 @@ fit_models <- function() {
         mutate(mod =
                  map2(.x = stan_data,
                       .y = name,
-                     .f = ~ {
-                       mod_stan <-
-                         model_stan$sample(
-                                      data =  .x,
-                                      seed =  123,
-                                      iter_sampling =  5000,
-                                      iter_warmup =  1000,
-                                      ## init = init,
-                                      thin =  5,
-                                      chains =  3,
-                                      parallel_chains =  3,
-                                      adapt_delta =  0.99,
-                                      output_dir =  data_path,
-                                      )
-                       nm <- paste0(data_path, "mod_", name, ".rds")
-                       saveRDS(mod_stan,
-                               file = nm
-                               )
-                       nm
-                     }
-                     ))
+                      .f = ~ {
+                        nm <- paste0(data_path, "mod_", name, ".rds")
+                        if (file.exists(nm)) {
+                          cat(paste("\n", "Skipping", name, "as it already exists\n"))
+                          return(nm)
+                        }
+                        mod_stan <-
+                          model_stan$sample(
+                                       data =  .x,
+                                       seed =  123,
+                                       iter_sampling =  5000,
+                                       iter_warmup =  1000,
+                                       ## init = init,
+                                       thin =  5,
+                                       chains =  3,
+                                       parallel_chains =  3,
+                                       adapt_delta =  0.99,
+                                       output_dir =  data_path,
+                                       )
+                        saveRDS(mod_stan,
+                                file = nm
+                                )
+                        nm
+                      }
+                      ))
       ## ----end
       benthic_models
     }

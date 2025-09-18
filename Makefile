@@ -32,6 +32,11 @@ build_docker:
 	@echo "Building Docker image..."
 	docker build --tag gcrmn_alt .
 
+build_singularity:
+	@echo "Building singularity image..."
+	docker save gcrmn_alt -o gcrmn_alt.tar
+	apptainer build gcrmn_alt.sif docker-archive://gcrmn_alt.tar
+ 
 docs_container:
 	docker run --rm -v "$(shell pwd)":/home/Project gcrmn_alt $(MAKE) render_docs
 
