@@ -165,23 +165,50 @@ fit_models <- function() {
     }
     ),
 
-    ## Stan predictions
-    tar_target(fit_models_stan_predict_, {
+    ## ## Stan posterior predictions
+    tar_target(fit_models_stan_posterior_predict_, {
       benthic_models <- fit_models_stan_
+      data_path <- fit_models_global_parameters_$data_path
+      output_path <- fit_models_global_parameters_$output_path
+      all_years <- get_all_years_
+      ## ---- fit models stan posterior predictions
+      benthic_models <- benthic_models |>
+        mutate(posteriors = map2(.x = mod,
+                                .y = name,
+                                .f =  ~ {
+                                  mod <- readRDS(paste0(data_path, "mod_", .y, ".rds"))
+                                  vars <- get_variables(mod)
+                                  posteriors <-
+                                    mod$draws(variables = "Years") |>
+                                    posterior::as_draws_df() |>
+                                    mutate(across(starts_with("Years"), plogis)) 
+                                  nm <- paste0(data_path, "posteriors_", name, ".rds")
+                                  saveRDS(posteriors,
+                                          file = nm
+                                          )
+                                  nm
+                                }
+                                ))
+      ## ----end
+      benthic_models
+    }
+    ),
+
+    ## ## Stan predictions summarised
+    tar_target(fit_models_stan_predict_, {
+      benthic_models <- fit_models_stan_posterior_predict_
       data_path <- fit_models_global_parameters_$data_path
       output_path <- fit_models_global_parameters_$output_path
       all_years <- get_all_years_
       ## ---- fit models stan predictions
       benthic_models <- benthic_models |>
-        mutate(cellmeans = map2(.x = mod,
+        mutate(cellmeans = map2(.x = posteriors,
                                 .y = name,
                                .f =  ~ {
-                                 mod <- readRDS(paste0(data_path, "mod_", .y, ".rds"))
-                                 vars <- get_variables(mod)
+                                 posteriors <- readRDS(.x)
+                                 ## vars <- get_variables(mod)
                                  cellmeans <-
-                                   mod$draws(variables = "Years") |>
-                                   posterior::as_draws_df() |>
-                                   mutate(across(starts_with("Years"), plogis)) |>
+                                   posteriors |> 
                                    posterior::summarise_draws(
                                                 median,
                                                 HDInterval::hdi,
@@ -201,7 +228,7 @@ fit_models <- function() {
     }
     ),
 
-    ## Stan partial plot
+    ## ## Stan partial plot
     tar_target(fit_models_stan_partial_plot_, {
       benthic_models <- fit_models_stan_predict_
       data_path <- fit_models_global_parameters_$data_path
@@ -209,7 +236,8 @@ fit_models <- function() {
       interpolate_values <- interpolate_values_
       stan_partial_plot <- stan_partial_plot_
       ## ---- fit models stan partial plot
-      benthic_models <- benthic_models |>
+      benthic_models <-
+        benthic_models |>
         mutate(plot = pmap(.l = list(cellmeans, data, stan_data, name),
                            .f = ~ {
                              cellmeans <- readRDS(..1)
@@ -229,13 +257,13 @@ fit_models <- function() {
                                                      ytitle = ytitle,
                                                      include_raw = TRUE)
 
-                             nm <- paste0(output_path, "pdp_", "_", ..4, ".png")
+                             nm <- paste0(output_path, "figures/pdp_", "_", ..4, ".png")
                              ggsave(
                                filename = nm,
                                g1,
                                width =  6, height =  4, dpi =  72
                              )
-                             nm2 <- paste0(output_path, "pdpraw_", "_", ..4, ".png")
+                             nm2 <- paste0(output_path, "figures/pdpraw_", "_", ..4, ".png")
                              ggsave(
                                filename = nm2,
                                g2,
@@ -276,10 +304,10 @@ fit_models <- function() {
       benthic_models
     }
     )
-    ## tar_target(test, {
-    ##   interpolate_values <- interpolate_values_
-    ##   interpolate_values(1:5, 1, "mean")
-    ## })
+    ## ## tar_target(test, {
+    ## ##   interpolate_values <- interpolate_values_
+    ## ##   interpolate_values(1:5, 1, "mean")
+    ## ## })
     
   )
 }

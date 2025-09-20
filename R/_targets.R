@@ -23,10 +23,12 @@ source("helper_functions.R")    # Load the modelling of incomplete spatial scrip
 source("process_spatial.R")
 source("process_benthic_data.R")
 source("fit_models.R")
+source("aggregate_models.R")
 
 list(
   helper_functions(),
   process_spatial(),
   process_benthic_data(),
-  fit_models()
+  fit_models(),
+  aggregate_models()
 )

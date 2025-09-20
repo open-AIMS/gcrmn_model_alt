@@ -147,20 +147,22 @@ helper_functions <- function() {
           missing_after 
           ) |>
           dplyr::select(Year)
-
-        cellmeans_silo_yrs <- cellmeans |>
-          right_join(silo_yrs, by =  "Year") |>
-          mutate(grp = 1:n()) |>
-          group_by(grp) |> 
-          reframe(
-            median =  interpolate_values(cellmeans, Year, "median"),
-            lower =  interpolate_values(cellmeans, Year, "lower"),
-            upper =  interpolate_values(cellmeans, Year, "upper"),
-            lower_80 =  interpolate_values(cellmeans, Year, "lower_80"),
-            upper_80 =  interpolate_values(cellmeans, Year, "upper_80"),
-            Year =  c(Year - 0.1, Year + 0.1)
-          ) |>
-          ungroup()
+        if (nrow(silo_yrs) > 0) {
+          cellmeans_silo_yrs <- cellmeans |>
+            ungroup() |> 
+            right_join(silo_yrs, by =  "Year") |>
+            mutate(grp = 1:n()) |>
+            group_by(grp) |> 
+            reframe(
+              median =  interpolate_values(cellmeans, Year, "median"),
+              lower =  interpolate_values(cellmeans, Year, "lower"),
+              upper =  interpolate_values(cellmeans, Year, "upper"),
+              lower_80 =  interpolate_values(cellmeans, Year, "lower_80"),
+              upper_80 =  interpolate_values(cellmeans, Year, "upper_80"),
+              Year =  c(Year - 0.1, Year + 0.1)
+            ) |>
+            ungroup()
+        }
         ## find gaps
         ## gap_yrs <- sample_yrs |>
         ##   reframe(Year = setdiff(full_seq(Year, period = 1), Year))
