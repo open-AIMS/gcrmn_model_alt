@@ -238,5 +238,29 @@ RUN R -e "options(repos = \
 
 RUN pip3 install --break-system-packages ploomber
 
+RUN Rscript -e 'tinytex::install_tinytex()'
+RUN Rscript -e 'tinytex::tlmgr_update(all = TRUE, self = TRUE)'
+RUN Rscript -e 'tinytex::tlmgr_install("titlesec")'
+RUN Rscript -e 'tinytex::tlmgr_install("forest")'
+RUN Rscript -e 'tinytex::tlmgr_install("komo-script")'
+RUN Rscript -e 'tinytex::tlmgr_install("caption")'
+RUN Rscript -e 'tinytex::tlmgr_install("pgf")'
+RUN Rscript -e 'tinytex::tlmgr_install("environ")'
+RUN Rscript -e 'tinytex::tlmgr_install("tikzfill")'
+RUN Rscript -e 'tinytex::tlmgr_install("tcolorbox")'
+RUN Rscript -e 'tinytex::tlmgr_install("pdfcol")'
+
+RUN R -e "options(repos = \
+    list(CRAN = \"https://packagemanager.posit.co/cran/2024-04-11/\")); \
+  pak::pkg_install(c('magick')); \
+"
+
+RUN R -e "options(repos = \
+    list(CRAN = \"https://packagemanager.posit.co/cran/2024-04-11/\")); \
+  pak::pkg_install(c('pdftools')); \
+"
+
+RUN Rscript -e 'tinytex::tlmgr_install("standalone")'
+
 RUN mkdir /home/Project
 WORKDIR /home/Project

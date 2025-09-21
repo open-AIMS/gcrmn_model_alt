@@ -24,7 +24,7 @@ $(info ************************************)
 # Default target
 all: build_docker run_python run_R render_docs
 
-run_container: python_container R_container docs_container
+run_container: R_container docs_container
 
 run_local: run_python run_R render_docs
 
