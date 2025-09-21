@@ -1,0 +1,1200 @@
+---
+title: "Comparing models - real data"
+author: "Murray Logan"
+date: today
+date-format: "DD/MM/YYYY"
+format:
+  html:
+    ## Format
+    theme: [default, resources/style.scss]
+    css: resources/style.css
+    html-math-method: mathjax
+    ## Table of contents
+    toc: true
+    toc-float: true
+    ## Numbering
+    number-sections: true
+    number-depth: 3
+    ## Layout
+    page-layout: full
+    fig-caption-location: "bottom"
+    fig-align: "center"
+    fig-width: 4
+    fig-height: 4
+    out-width: 500px
+    fig-dpi: 72
+    tbl-cap-location: top
+    ## Code
+    code-fold: false
+    code-tools: true
+    code-summary: "Show the code"
+    code-line-numbers: true
+    code-block-border-left: "#ccc"
+    code-copy: true
+    highlight-style: atom-one
+    ## Execution
+    execute:
+      echo: true
+      #cache: true
+    ## Rendering
+    embed-resources: true
+crossref:
+  fig-title: '**Figure**'
+  fig-labels: arabic
+  tbl-title: '**Table**'
+  tbl-labels: arabic
+engine: knitr
+## execute: 
+##   cache: true
+jupyter: python3
+output_dir: "docs"
+documentclass: article
+fontsize: 12pt
+mainfont: Arial
+mathfont: LiberationMono
+monofont: DejaVu Sans Mono
+classoption: a4paper
+bibliography: resources/references.bib
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+knitr::opts_chunk$set(
+    cache.lazy = FALSE,
+    tidy = "styler"
+)
+## allow indented chunks
+assignInNamespace(".sep.label",
+  "^\\ *(#|--)+\\s*(@knitr|----+)(.*?)-*\\s*$",
+    ns = "knitr"
+)
+knitr::read_chunk("../R/process_spatial.R")
+knitr::read_chunk("../R/process_benthic_data.R")
+knitr::read_chunk("../R/fit_models.R")
+knitr::read_chunk("../R/aggregate_models.R")
+knitr::read_chunk("../R/helper_functions.R")
+## knitr::read_chunk("../python/incomplete_spatial.py")
+## remove the indentation from all python chunks that start
+## with indentation
+codes <- knitr::knit_code$get()
+process_chunks <- function(codes) {
+  nms <- names(codes)
+  wch <- which(startsWith(names(codes), "python"))
+  codes1 <- lapply(1:length(codes), function(i) {
+    if (i %in% wch) {
+      x <- gsub("^ {4}", "", codes[[i]])
+    } else {
+      x <- codes[[i]]
+    }
+    x
+  })
+  names(codes1) <- nms
+  codes1
+}
+knitr::knit_code$set(
+  process_chunks(codes)
+)
+
+options(tinytex.engine =  'xelatex')
+```
+
+```{css, echo=FALSE}
+figcaption {
+  text-align: left !important;
+}
+```
+
+## Purpose
+
+The primary purpose of this page is to contrast the ability of various
+models to represent the temporal trends of real data from a select set
+of Marine Ecosystems Of the World (MEOW). For each MEOW, there will be
+modelled trends overlayed onto the raw data. These plots are to permit
+those who are familiar with the MEOWs to compare the trends yielded
+from different models so as to inform decisions about:
+
+- whether any model types yield trends that are inconsistent with the
+  understanding of the experts
+- whether the raw data themselves are broadly consistent with
+  expectations
+  
+The candidate models are:
+
+- `stan` - a bespoke Stan model I wrote for the previous GCRMN report
+
+## Preparations
+
+### Spatial layers
+
+::: {.panel-tabset}
+
+#### R
+
+```{r}
+#| label: cwd
+#| eval: false
+#| echo: false
+#| warning: false
+#| message: false
+#| cache: false
+getwd()
+```
+
+Load the necessary R libraries
+
+```{r}
+#| label: spatial libraries
+#| output: false
+#| eval: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+Establish the global environment and paths
+
+```{r}
+#| label: spatial global parameters
+#| results: hide
+#| eval: true
+#| echo: true
+#| cache: false
+```
+
+:::
+
+
+:::: {.panel-tabset}
+
+#### World map layers
+
+::: {.panel-tabset}
+
+##### R
+
+```{r}
+#| label: ne countries
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+  
+#### Reef grid
+
+::: {.panel-tabset}
+
+##### R
+
+```{r}
+#| label: reef grid
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+  
+#### Ecoregions (MEOWs)
+
+::: {.panel-tabset}
+
+##### R
+
+```{r}
+#| label: ecoregions
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+#### Ecoregion lookup
+
+::: {.panel-tabset}
+
+##### R
+
+```{r}
+#| label: ecoregion lookup
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+
+::::
+
+
+#### Process spatial data
+
+:::: {.panel-tabset}
+
+##### Reef grid
+
+::: {.panel-tabset}
+
+###### R
+
+```{r}
+#| label: process grid reef
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+##### Join MEOWs and lookup
+
+::: {.panel-tabset}
+
+###### R
+
+```{r}
+#| label: join meow and ecoregion_lookup
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+##### Process spatial weights
+
+::: {.panel-tabset}
+
+###### R
+
+```{r}
+#| label: process patial weights
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+
+::::
+
+
+
+### Benthic data
+
+::: {.panel-tabset}
+
+#### R
+
+Load the necessary R libraries
+
+```{r}
+#| label: spatial libraries
+#| output: false
+#| eval: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+Establish the global environment and paths
+
+```{r}
+#| label: processing global parameters
+#| results: hide
+#| eval: true
+#| echo: true
+#| cache: false
+```
+
+:::
+
+#### Import benthic data
+
+Benthic data
+
+```{r}
+#| label: read benthic data
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+Benthic prediction data
+
+```{r}
+#| label: read benthic prediction data
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+#### Process benthic data
+
+1. Process benthic data (Part 1. add ecoregions) 
+
+```{r}
+#| label: process benthic data Part 1. add ecoregions
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+2. Process benthic data (Part 2. add grid data)
+
+```{r}
+#| label: process benthic data Part 2. add grid data
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+3. Process benthic data (Part 3. add factors) 
+
+```{r}
+#| label: process benthic data Part 3. add factors
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+## Methods
+
+### Bayesian hierarchical model
+
+#### Modelling considerations
+
+The sampling design of most monitoring programs is typically tailored
+somewhere in a spectrum between a configuration of perpetually fixed
+sampling sites and a configuration of randomly selected sites,
+depending on the purpose, resources and logistics of the program.
+Whist fixed sites act as their own baselines over time and thus
+provide relatively efficient means for estimating temporal trends, the
+resulting estimates are biased towards the selected locations (which
+may not be collectively representative of the broader area). By
+contrast, a configuration of uniquely random sites each year is less
+likely to be biased (hence more representative) and yet usually
+requires considerably higher numbers of sites in order to detect
+temporal signals from within the noise.
+
+The focus and challenge for the current report is to utilise a
+collection of datasets from a large number of disparate monitoring
+programs from around the world in order to provide estimates of status
+and trends at much broader spatio-temporal scales.
+
+Whenever multiple data sets are integrated together (particularly if
+each is used to represent different areas), the issues of
+representativeness and bias are exasperated.  Firstly, quantitative
+estimates are always driven by sample sizes.  Within any well designed
+monitoring program, efforts are made to ensure the design remains
+relatively balanced.  However, this is not the case across programs.
+Therefore, when aggregating multiple datasets up to a broader scale,
+it is important to be able to control for varying samples sizes so as
+to minimise the risks of biasing towards the more heavily replicated
+data sets.  Moreover, sample size and density does not necessarily
+reflect the density and distribution of the underlying landscape.  For
+example, in the case of coral reefs, sampling intensity is likely to
+be a function of the relative prosperity of the surrounding
+populations and proximity to major population centers rather than the
+density and distribution of the reefs themselves.
+
+Enormous (and complex) spatio-temporal models that employ full
+positional encoding to evaluate the spatial
+patterns\footnote{auto-correlative structures} between all possible
+pairs of sampling units (sites) have the potential to allow the
+transferal of information from the fine, observation level
+measurements to the broader levels of this report. By assuming that a
+response (such as percentage live hard coral cover) varies
+continuously over an entire two-dimensional surface, such models are
+potentially able to leverage trends in areas of relatively high sample
+density to estimate the trends in neighbouring areas of sparse
+sampling density - albeit with greater uncertainty. However such
+models proved to be too computationally burdensome and were incredibly
+difficult to tune to ensure they yield sensible outcomes. They also
+assumed that changes over space were relatively gradual and thus, can
+easily smooth over what would otherwise be considered abrupt local
+changes. Furthermore, incorporating information about the spatial
+distribution of reefs as well as physical barriers to auto-correlative
+process are far from trivial.
+
+As an alternative, we explored hierarchical models in which sampling
+units are progressively aggregated with their neighbours into larger
+and larger units.  For example, neighbouring quadrats are grouped
+together into sites, sites into global grid locations (see below) and
+so on up to the level of the whole globe.  This represents a
+pseudo-spatial model in that although the influence of neighbouring
+data does deteriorate along the hierarchy, it does so in increments
+relating to group membership rather than as a continuous function of
+spatial distance. Hence in the case of an area comprising of ten
+sub-areas, each of the sub-areas will share some information with the
+other sub-areas even though any one of them might be geographically
+closer to a member of another area than most of the sub-areas in its
+designated area (the classic nearest vs average neighbour conundrum).
+In any case, all attempts to fit full, global hierarchical models with
+the very disparate datasets proved very difficult to stabilise.
+
+Instead, smaller hierarchical models (see @fig-schematichierarchy),
+fit separately to each MEOW Ecoregion, were integrated together within
+a spatially weighted aggregation hierarchy in which individual model
+posteriors (annual estimates) were propagated up through the
+hierarchy. Although this approach does still have some elements of the
+pseudo-spatial hierarchy that permits data poor areas to leverage
+patterns off data richer areas, the leveraging is quarantined to
+within MEOW Ecoregions where processes are more likely to be
+homogeneous and thus the resulting trends are more likely to be
+consistent with the observed data. More details about the spatial
+weights are discussed in section @sec-weights and the statistical
+models are discussed in section @sec-models.
+
+
+```{tikz}
+%| label: fig-schematichierarchy
+%| engine: tikz
+%| echo: false
+%| class: tikz
+%| out-width: 600px
+%| fig-cap: Schematic representation of the a) individual MEOW Ecoregion Bayesian modelling hierarchies and b) spatial aggregation hierarchy.  Note the quadrat-level is de-emphasized to highlight that not all data sources include this unit of observation.  The $\omega$ symbolise the use of spatial weights.
+%| engine-opts:
+%|   template: "resources/tikz-standalone.tex"
+
+\usetikzlibrary{shapes,arrows,shadows,positioning,mindmap,backgrounds,decorations, calc,fit, decorations.pathreplacing,decorations.pathmorphing, shadings,shapes.geometric, shapes.multipart,patterns}
+
+\tikzstyle{labelText} = [font={\fontspec[Scale=1]{inconsolata}}]
+\tikzstyle{Messy} = [decorate,decoration={random steps,segment length=3pt, amplitude=0.3pt},thick]
+\begin{tikzpicture}[edge from parent/.style={draw,latex-,Messy,anchor=north},
+% parent anchor=south, child anchor=north,
+level 1/.style={sibling distance = 3cm, level distance = 0.2cm},
+level 2/.style={sibling distance = 3cm, level distance = 1.2cm},
+level 3/.style={sibling distance = 1.5cm, level distance = 1.5cm},
+every tree node/.style={align=north,anchor=north}
+]
+\draw [fill=black!0] (-7cm,0.2cm) -- ++(12cm,0cm) -- ++(0cm,-9cm) -- ++(-12cm,0cm) -- ++(0cm,9cm);
+\node [labelText, anchor=north west] at(-7,0) {a)};
+\path
+node {}
+child {node [labelText] (E1) {Ecoregion} edge from parent[draw=none]
+child {node [labelText] (L1) {Tile 1}
+child {node [labelText] (S1) {S1}
+child {node [labelText,text=black!30] (Q1){Q1}
+child {node [labelText] (Y) {
+\begin{tabular}{c}
+1\\.\\.\\.\\
+\end{tabular}
+}}
+}
+child {node [labelText,text=black!20] (Q2){Q2}
+}
+}
+child {node [labelText] {S2}}
+edge from parent node [left=1mm] {$\omega_{t_1}$}
+}
+child {node [labelText] {Tile 2}
+child {node [labelText] {S1}}
+edge from parent node [right] {$\omega_{t_2}$}
+}
+child {node [labelText] {Tile 3}
+child {node [labelText] {S1}}
+child {node [labelText] {S2}}
+child {node [labelText] {S3}
+}
+edge from parent node [right] {$\omega_{t_3}$}
+}
+};
+\draw [anchor=west] ($(L1.west) + (-3.1cm,0)$) node [labelText] (Location) {Grid Tile};
+\draw [dashed] (Location) -- (L1);
+\draw [anchor=west] ($(Location.west |- S1.center)$) node [labelText] (Site) {Site};
+\draw [dashed] (Site) -- (S1);
+\draw [anchor=west] ($(Location.west |- Q1.center)$) node [labelText,text=black!30] (Quadrat) {Quadrat};
+\draw [dashed,draw=black!30] (Quadrat) -- (Q1);
+\draw [anchor=west] (Location.west |- Y.center) node [labelText] (Year) {Year};
+\path [draw, Messy,decorate, decoration={brace, amplitude=8pt}] (Y.south west) -- (Y.north west);
+
+\begin{scope}[xshift=4.5cm,yshift=-4.2cm,
+level 1/.style={sibling distance = 1cm, level distance = 0.2cm},
+level 2/.style={sibling distance = 1.5cm, level distance = 1.2cm},
+level 3/.style={sibling distance = 2.0cm, level distance = 1.5cm}
+]
+\draw [fill=black!5] (-7cm,0.2cm) -- ++(9.0cm,0cm) -- ++(0cm,-9cm) -- ++(-9.0cm,0cm) -- ++(0cm,9cm);
+\node [labelText, anchor=north west] at(-7,0) {b)};
+\path
+node {}
+child {node [labelText] (G1) {Global} edge from parent[draw=none]
+child{node [labelText] (R1) {R1}
+child{node [labelText] (SR1) {SR1}
+child{node [labelText] (E1) {E1}
+child {node [labelText] (Y) {
+\begin{tabular}{c}
+1\\.\\.\\.\\
+\end{tabular}
+}}
+edge from parent node [left] {$\omega_{e_1}$}
+}
+child{node [labelText] (E2) {E2}
+edge from parent node [right] {$\omega_{e_2}$}
+}
+edge from parent node [left] {$\omega_{s_1}$}
+}
+child{node [labelText] (SR2) {SR2}
+edge from parent node [right] {$\omega_{s_2}$}
+}
+edge from parent node [left] {$\omega_{r_1}$}
+}
+child{node [labelText] (R2) {R2}
+edge from parent node [pos=0.7,right] {$\omega_{r_2}$}
+}
+child{node [labelText] (R3) {R3}
+edge from parent node [right] {$\omega_{r_3}$}
+}
+};
+\draw [anchor=west] ($(R1.west) + (-4.9cm,0)$) node [labelText] (Region) {\begin{minipage}[h]{1.5cm}GCRMN\\ Region\end{minipage}};
+\draw [dashed] (Region) -- (R1);
+\draw [anchor=west] ($(Region.west |- SR2.center)$) node [labelText] (Subregion) {\begin{minipage}[h]{2cm}GCRMN\\Subregion\end{minipage}};
+\draw [dashed] (Subregion) -- (SR1);
+\draw [anchor=west] ($(Region.west |- E1.center)$) node [labelText] (Ecoregion) {\begin{minipage}[h]{2cm}MEOW\\Ecoregion\end{minipage}};
+\draw [dashed] (Ecoregion) -- (E1);
+\draw [anchor=west] (Region.west |- Y.center) node [labelText] (Year) {Year};
+\path [draw, Messy,decorate, decoration={brace, amplitude=8pt}] (Y.south west) -- (Y.north west);
+\draw [dashed] (Year) -- ($(Y) +(-10mm,0)$);
+\end{scope}
+
+\end{tikzpicture}
+
+```
+
+
+
+#### Spatial hierarchy
+
+The pseudo-spatial hierarchy outlined above necessitates incremental
+jumps in scale from the level at which observations are collected up
+to the Global (or even regional) scale.  <!--That is, it is necessary
+to group the spatial units up incrementally into larger and large
+spatial groups (hence the previously described hierarchy).--> If the
+jumps are too large, the information (temporal patterns) shared across
+neighbouring spatial units might be driven by very different
+underlying conditions and thus not appropriate.
+
+The original datasets collated in this study were provided at scales
+of either quadrat/transect or spatial aggregations thereof.  These can
+be naturally grouped into sites (or individual reefs) as the first
+incremental scale jump, however, subsequent increments are less obvious.
+
+There are numerous ways of grouping coral reef locations into broader
+geographic areas, or from the other direction, dividing the globe up
+spatially. Some candidates include: Exclusive Economic Zones
+[@EEZ-2019], Venon Ecoregions [@Veron-2000] or Marine Ecosystems of
+the World
+[@Spalding-2007]\footnote{https://www.worldwildlife.org/publications/marine-ecoregions-of-the-world-a-bioregionalization-of-coastal-and-shelf-areas}.
+Consensus amongst a large panel of coral reef regional representatives
+was that Marine Ecosystems of the World (hereafter MEOW) global
+classification system were the most appropriate as it has a strong
+bio-geographic focus capturing important, community, evolutionary,
+dispersal and isolation processes [@Spalding-2007]. The MEOW
+Ecoregions were further grouped up into GCRMN sub-regions and regions
+(see tables in the Subregion and Region level outputs) and Figures
+@fig-schematichierarchy & @fig-schematic) to provide additional
+modelling and reporting granularity.
+
+::: {.figure #fig-schematic}
+![](resources/schematic_final_version.png){width=600px}
+
+Schematic diagram illustrating the hierarchical structure relating the
+hypothetical observations (bottom layer) to the level of a 10x10km
+grid tile, MEOW Ecoregions, GCRMN Regions and Global scale. The grid
+tile layer depicts the 10x10km tile containing reef (red) and the
+voronoi polygons (blue lines) used to partition area zones of sample
+unit influence. The MEOW Ecoregions layer illustrates five fictitious
+Ecoregions which are aggregated into two GCRMN Regions in the layer
+above. Vertical lines illustrate the aggregation of data along the
+hierarchy and the numbers along these paths represent the aggregation
+weights (also tabulated).
+:::
+
+
+The jump in spatial scale from Site (reef) to MEOW Ecoregion can be
+very large and span a wide range of influential processes and drivers.
+We therefore sought an additional intermediate scale.  Such a scale
+could be based on collections of reefs or broad communities, however
+such information was not universally available.  An intermediate scale
+could also be achieved by gridding the globe up into an array (grid)
+of cells or tiles or a constant size.  Moreover, the use of grid tiles
+provides a way of abstracting away design differences between fixed
+and random annual site selections - and thus a mechanism by which
+multiple sampling designs can be incorporated in the one model.
+
+#### Spatial weights {#sec-weights}
+
+In order to help maximise the chances that the hierarchical
+aggregations are reflective of broad spatial patterns and not heavily
+biased by sampling effort alone, the aggregations must be weighted by
+the proportion of reef area represented by each spatial unit.
+
+Estimating the distribution and quantity of global coral reefs is a
+challenging problem.  As is the case with sampling effort consistency
+across the globe, the granularity and accuracy of coral reef mapping
+varies substantially from region to region, Hence, we sought a
+potentially less biased and more uniform method of estimating reef
+area.
+
+##### Tropical Coral Reefs of the World
+
+As an alternative to the Allen Atlas, Tropical Coral Reefs of the
+World [@Burke-2011; @WRI-2011] digital shapefiles were used to estimate the
+amount of coral reef.  The intermediate spatial scale between observed
+sites and MEOWs was provided by generating a 10x10km grid of tiles
+across the entire globe and assigning a unique identifier to each
+tile.
+
+###### Tile level weights
+
+All observed site level locations were assigned to an grid tile on the
+basis of nearest neighbour within 10km. To estimate the amount of reef
+area within each MEOW that was represented by each of the observed
+sites, voronoi polygons were generated from the unique site locations
+and overlayed onto the grid (see @fig-voronoi). The reef area
+associated with each voronoi cell were then expressed as a proportion
+of the total MEOW reef area, thereby representing the relative weight
+that each grid tile should carry in the analyses.
+
+::: {.figure #fig-voronoi}
+![](resources/voronoi-1.png){width=600px}
+
+Illustration of voronoi polygons overlayed on the 10x10km grid and
+reefs (grey). Shaded grid tiles represent grid tiles containing
+observed sites and hue of the grid tile shading represents the
+relative weights (proportion of reef area in each grid tile).
+:::
+
+
+###### Larger scale weights
+
+The weights (relative contributions) of each MEOW Ecoregion in
+aggregating up to GCRMN Sub-regions was calculated as the proportion
+of MEOW reef area within each GCRMN Sub-region (see @fig-weights).
+Similarly, GCRMN Sub-region and Region weights (used in aggregations
+to GCRMN Region and Global levels respectively) were calculated from
+the respective proportions of reef areas in GCRMN Regions and
+Globally.
+
+::: {.figure #fig-weights}
+![](resources/weights_final_version.png){width=600px} 
+
+Illustration of the relative reef area represented by each 10x10km
+grid tile within three MEOW Ecoregions. The hue of reef fill is
+proportional to the relative area of reef in the MEOW.
+:::
+
+
+
+#### Statistical model {#sec-models}
+
+Live hard coral cover and algal cover were calculated by summing
+observation level data across associated taxonomic groupings.
+
+Separate MEOW Ecosystem Bayesian hierarchical models were constructed
+within the stan statistical modelling platform [@Carpenter-2017-2017]
+via the rstan [@rstan-2025] interface. Each model comprised a model
+matrix representing year dumpy coded as cell means contrasts, a model
+matrix representing Dataset coded as sum to zero contrasts as well as
+varying effects representing the hierarchical structure of Sites
+nested within grid tiles ([@fig-schematichierarchy]a).
+Weights were also applied to the grid tiles in order to allow the
+influence of each grid tile to be proportional to the relative area of
+reef each grid tile represented.
+
+Separate models were fitted to explore trends in live hard coral cover
+(HCC) and algae cover (A).  In each case, cover was modelled against a
+beta distribution (logit link).  Cover values of either 0 or 1 were
+first shrunk by 0.01 for compatibility with the beta distribution.
+Weakly informative priors were applied to the beta shape parameters as
+well as the varying effects parameters and their standard deviations.
+
+In order to impute missing year combinations and smooth over
+short-term oscillations in estimates resulting from short-term
+fluctuations in sampling designs and data availability, priors on Year
+effects (except that associated with the first observed year of data
+in a MEOW Ecoregion) were weakly informative normal priors centred
+around the posterior of either previous Year (in the case of Years
+after the initial observed year) or after (in the case of Years prior
+to the initial observed year).  For the initial observed Year,
+standard (zero centred) weakly informative priors were applied.
+
+The Dataset effects were included to act as proxies for all the many
+and varying ways that different datasets differ including depth,
+sampling unit type (quadrats, transects, etc) and observer experience.
+Weakly informative normal priors were applied to the Dataset
+effects.  
+
+The statistical models can be summarised as:
+
+\begin{align}
+  y &\sim Beta(\mu\phi, (1-\mu)\phi)\\
+  logit(\mu) &= \mathbf{\beta_y} \mathbf{X_y} + \mathbf{\beta}_d \mathbf{X_d} + \mathbf{\gamma_s} Z_s + \omega\mathbf{\gamma_t} Z_t\\
+  \mathbf{\gamma_s} &= \sigma_s\times z_s\\
+  \mathbf{\gamma_t} &= \sigma_t\times z_t\\
+  \phi &\sim \Gamma(0.01,0.01)\\
+  z_s,z_t &\sim N(0,1)\\
+  \sigma_s, \sigma_t &\sim t(3,0,10)\\
+  \mathbf{\beta_{y_i}} &\begin{cases}i=O_y, \sim N(0, \sigma_y)\\i>O_y, \sim N(\beta_{s_{i-1}}, \sigma_{y1})\\i<O_y, \sim N(\beta_{s_{i+1}}, \sigma_{y1})\end{cases}\\
+  \mathbf{\beta_d} &\sim N(0, 0.1)
+  \end{align}
+
+where $y$ is the cover of either live hard coral or algae,
+$\mathbf{\beta_y}$ and $\mathbf{\beta_d}$ represent the effects of
+Year and Dataset respectively, $\mathbf{X_y}$ and $\mathbf{X_d}$
+represent cell-means Year and sum-to-zero Dataset model matrices
+respectively, $\mathbf{\gamma_s}$ and $\mathbf{\gamma_t}$ are the
+sum-to-zero varying effects, and $Z_s$ and $Z_t$ represent the Site
+and grid tile codes respectively. $o_y$ represents the initial
+observed Year within the MEOW Ecoregion and $i$ is a year iterator.
+
+Trends in hard coral cover to algae ratio (HCC:A) employed
+structurally very similar models to those described above, yet the
+ratio was modelled against a Gaussian distribution.
+
+All models were run with 10000 no-u-turn MCMC iterations, a warmup of
+5000 and a thinning rate of 5 for each of three chains (each with
+random initial values). Diagnostics indicated that all chains
+converged on stable, well mixed posteriors (Rhat values < 1.05) and
+low MCMC sample auto-correlation (< 0.2).
+
+#### Hierarchical aggregation
+
+The full posteriors for the Year effects (on the logit scale) of each
+MEOW Ecoregion were averaged together within each GCRMN Sub-region
+([@fig-schematichierarchy]b).  The resulting posteriors were
+then summarised by back-transforming to the response scale (inverse
+logit transform in the case of beta models) and calculating the means
+and highest probability density intervals (80\% and 95\%).  Similarly,
+the un-standardised GCRMN Sub-region posteriors were aggregated (with
+weights) up to GCRMN Region and then Global level 
+(see [@fig-schematichierarchy]b & [@fig-schematic]).
+
+
+
+
+## Modelled trends
+
+
+::: {.panel-tabset}
+
+### Get ecoregions
+Get the names of the ecoregions
+
+```{r}
+#| label: get ecoregions
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+### Get all the years
+
+```{r}
+#| label: get all years
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+### Set up nest
+Set up the nested data for modelling
+
+```{r}
+#| label: fit models nest
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+### Refactor subsets
+
+```{r}
+#| label: fit models refactor
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+### Prepare data for STAN
+
+```{r}
+#| label: prepare data for stan function
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: fit models prepare for stan
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+### STAN code (model2.stan)
+
+```{R}
+#| label: fit models stan code
+#| echo: false
+cat(readLines("../R/model2.stan"), sep = "\n")
+```
+ 
+### Fit STAN models
+
+```{r}
+#| label: fit models stan
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+### Extract posterior predictions
+
+```{r}
+#| label: fit models stan posterior predictions
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+In each of the following sections:
+
+- the white line represents the posterior median of cover estimates
+- the darkest orange band represents the 80% credibility interval of
+  cover estimates
+- the orange band represents the 95% credibility interval of the
+  cover estimates
+- the light orange band represents the 95% credibility interval of
+  cover estimates for years in which there were no observed data in
+  the presented spatial scale (e.g. Ecoregion, Subregion or Region).
+- in the case of Subregions and Regions, the light orange band only
+  appears for spans of years for which there were no observations
+  across all the consistuent spatial units.
+  
+### Ecoregion (MEOW) level
+
+
+::: {.callout-note collapse=true}
+#### Show code
+
+```{r}
+#| label: interpolate values function
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: stan partial plot function
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: aggregate_compile
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: aggregate_compile_plots
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+
+
+:::
+
+```{r}
+#| label: read aggregate ecoregion plots
+#| eval: true
+#| echo: false
+#| warning: false
+#| message: false
+#| cache: true
+benthic_posteriors_ecoregions <- targets::tar_read("aggregate_ecoregion_plots_", store = "../R/_targets")
+```
+
+```{r}
+#| label: aggregate ecoregion plots
+#| eval: true
+#| echo: false
+#| output: asis
+#| warning: false
+#| message: false
+#| cache: true
+cat("::: {.panel-tabset}\n")
+for (reg in sort(unique(benthic_posteriors_ecoregions$region))) {
+  dat_reg <- benthic_posteriors_ecoregions |>
+    filter(region == reg)
+  cat(paste0("#### ", reg, "\n"))
+  cat("::: {.panel-tabset}\n")
+  for (subreg in sort(unique(dat_reg$subregion))) {
+    cat(paste0("###### ", subreg, "\n"))
+    dat_subreg <- dat_reg |>
+      filter(subregion == subreg)
+    cat("::: {.panel-tabset}\n")
+    for (eco in sort(unique(dat_subreg$ecoregion))) {
+      cat(paste0("###### ", eco, "\n"))
+      dat_eco <- dat_subreg |>
+        filter(ecoregion == eco)
+      fig <- dat_eco$plot[[1]]
+      fig2 <- str_replace(fig, "pdp", "pdpraw")
+      cat(paste0("![](", fig2, "){width=300px}",
+                 "![](", fig, "){width=300px}\n\n"))
+    }
+    cat(":::\n")
+  }
+  cat(":::\n")
+}
+cat(":::\n")
+
+```
+
+### Subregion level
+
+Subregion level estimates are generated by calculating weighted
+averages of Ecoregion posteriors (at the draw level). Weights are
+based on relative reef areas of the Ecoregions as calculated from
+Coral Reefs of the World spatial layers.
+
+
+::: {.callout-note collapse=true}
+#### Show code
+
+```{r}
+#| label: interpolate values function
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: stan partial plot function
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: aggregate_subregions
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: aggregate_subregions_plots
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+
+
+:::
+
+```{r}
+#| label: read aggregate subregion plots
+#| eval: true
+#| echo: false
+#| warning: false
+#| message: false
+#| cache: true
+benthic_posteriors_subregions <- targets::tar_read("aggregate_subregion_plots_", store = "../R/_targets")
+wts <- targets::tar_read("process_spatial_weights_", store = "../R/_targets")
+```
+
+```{r}
+#| label: aggregate subregion plots
+#| eval: true
+#| echo: false
+#| output: asis
+#| warning: false
+#| message: false
+#| cache: true
+cat("::: {.panel-tabset}\n")
+for (reg in sort(unique(benthic_posteriors_subregions$region))) {
+  dat_reg <- benthic_posteriors_subregions |>
+    filter(region == reg)
+  cat(paste0("#### ", reg, "\n"))
+  cat("::: {.panel-tabset}\n")
+  for (subreg in sort(unique(dat_reg$subregion))) {
+    cat(paste0("###### ", subreg, "\n"))
+    dat_subreg <- dat_reg |>
+      filter(subregion == subreg)
+      fig <- dat_subreg$plot[[1]]
+      cat(paste0("![](", fig, "){width=300px}\n\n"))
+    wts |>
+      mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |> 
+      filter(GCRMN_region == reg,
+             GCRMN_subregion == subreg) |>
+      dplyr::select(Region = GCRMN_region,
+                    Subregion = GCRMN_subregion,
+                    Ecoregion = ECOREGION,
+                    Area = area,
+                    Weight = wt) |>
+      knitr::kable(caption = "Ecoregion (MEOW) reef area and weights applied in the aggregation up to Subregion") |>
+      print()
+  }
+  cat(":::\n")
+}
+cat(":::\n")
+```
+
+### Region level
+
+Region level estimates are generated by calculating weighted
+averages of Subregion posteriors (at the draw level). Weights are
+based on relative reef areas of the Subregions as calculated from
+Coral Reefs of the World spatial layers.
+
+::: {.callout-note collapse=true}
+#### Show code
+
+```{r}
+#| label: interpolate values function
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: stan partial plot function
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: aggregate_regions
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: aggregate_regions_plots
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+```{r}
+#| label: read aggregate region plots
+#| eval: true
+#| echo: false
+#| warning: false
+#| message: false
+#| cache: true
+benthic_posteriors_regions <- targets::tar_read("aggregate_region_plots_", store = "../R/_targets")
+```
+
+```{r}
+#| label: aggregate region plots
+#| eval: true
+#| echo: false
+#| output: asis
+#| warning: false
+#| message: false
+#| cache: true
+cat("::: {.panel-tabset}\n")
+for (reg in sort(unique(benthic_posteriors_regions$region))) {
+  dat_reg <- benthic_posteriors_regions |>
+    filter(region == reg)
+  cat(paste0("#### ", reg, "\n"))
+  fig <- dat_reg$plot[[1]]
+  cat(paste0("![](", fig, "){width=300px}\n\n"))
+  wts |>
+    mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |> 
+    filter(GCRMN_region == reg) |> 
+    dplyr::select(Region = GCRMN_region,
+                  Subregion = GCRMN_subregion,
+                  Area = subregion_area) |>
+    group_by(Region, Subregion) |>
+    summarise(Area = unique(Area), .groups = "drop") |> 
+    mutate(wt = Area / sum(Area)) |> 
+    knitr::kable(caption = "Subregion reef area and weights applied in the aggregation up to Region") |>
+    print()
+}
+cat(":::\n")
+```
