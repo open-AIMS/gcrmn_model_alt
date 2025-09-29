@@ -1,4 +1,3 @@
-
 fit_models <- function() {
   targets <- list(
                                         # Target: Load processing libraries
@@ -7,10 +6,11 @@ fit_models <- function() {
       {
         ## ---- fit models libraries
         library(tidyverse)      # for data manipulation and visualisation
+        library(furrr)
         ## ----end
       }
     ),
-    
+
     tar_target(
       fit_models_global_parameters_,
       {
@@ -72,7 +72,7 @@ fit_models <- function() {
       benthic_models
     }
     ),
-    
+
     ## Refactor subsets
     tar_target(fit_models_refactor_, {
       benthic_models <- fit_models_nest_
@@ -81,8 +81,8 @@ fit_models <- function() {
         mutate(data =
                  map(.x = data,
                      .f = ~ {
-                       .x |> 
-                         droplevels() |> 
+                       .x |>
+                         droplevels() |>
                          mutate(cYear = factor(year),
                                 Year = year,
                                 Cover = value_trim,
@@ -99,7 +99,7 @@ fit_models <- function() {
       benthic_models
     }
     ),
-     
+
     ## Prepare data for STAN
     tar_target(fit_models_prepare_stan_data_, {
       benthic_models <- fit_models_refactor_
@@ -127,39 +127,85 @@ fit_models <- function() {
       benthic_models <- fit_models_prepare_stan_data_
       data_path <- fit_models_global_parameters_$data_path
       ## ---- fit models stan
+      print(unique(benthic_models$region))
       model_stan <- cmdstanr::cmdstan_model(stan_file =  "model2.stan")
       benthic_models <- benthic_models |>
-        ## filter(ecoregion == "Fiji Islands", category == "Hard coral") |> 
-        ## filter(ecoregion == "Eastern Caribbean", category == "Hard coral") |> 
-        filter(category == "Hard coral") |> 
-        mutate(mod =
-                 map2(.x = stan_data,
-                      .y = name,
-                      .f = ~ {
-                        nm <- paste0(data_path, "mod_", name, ".rds")
-                        if (file.exists(nm)) {
-                          cat(paste("\n", "Skipping", name, "as it already exists\n"))
-                          return(nm)
-                        }
-                        mod_stan <-
-                          model_stan$sample(
-                                       data =  .x,
-                                       seed =  123,
-                                       iter_sampling =  5000,
-                                       iter_warmup =  1000,
-                                       ## init = init,
-                                       thin =  5,
-                                       chains =  3,
-                                       parallel_chains =  3,
-                                       adapt_delta =  0.99,
-                                       output_dir =  data_path,
-                                       )
-                        saveRDS(mod_stan,
-                                file = nm
-                                )
-                        nm
-                      }
-                      ))
+        ## filter(ecoregion == "Fiji Islands", category == "Hard coral") |>
+        ## filter(ecoregion == "Eastern Caribbean", category == "Hard coral") |>
+        filter(category %in% c("Hard coral", "Macroalgae"))
+
+      options(future.globals.maxSize = 2 * 1024^3)
+      future::plan(future::multisession, workers = 9)
+      results <- furrr::future_map2(.x = benthic_models$stan_data,
+        .y = benthic_models$name,
+        .f = ~ {
+          name <- .y
+          nm <- paste0(data_path, "mod_", name, ".rds")
+          if (file.exists(nm)) {
+            cat(paste("\n", "Skipping", name, "as it already exists\n"))
+            return(nm)
+          }
+          mod_stan <-
+            model_stan$sample(
+              data =  .x,
+              seed =  123,
+              iter_sampling =  5000,
+              iter_warmup =  1000,
+              ## init = init,
+              thin =  5,
+              chains =  3,
+              parallel_chains =  3,
+              adapt_delta =  0.99,
+              output_dir =  data_path,
+              )
+          saveRDS(mod_stan,
+            file = nm
+          )
+          nm
+        },
+        .progress = TRUE
+      )
+      benthic_models <- benthic_models |>
+        ungroup() |>                                      ## need to ungroup for the following
+        mutate(mod = results) |>
+        group_by(region, subregion, ecoregion, category)  ## put the groups back
+
+
+     ##    filter(category == "Hard coral") |>
+     ##    ##filter(region=="WIO") |>
+     ##    ## unfortunately, future_map2, does not work with grouped data
+     ##    ## so I will have to make name a list column and ungroup the data
+     ##    ## nest(name=name) |> ungroup() |>
+     ##    mutate(mod =
+     ##             ##furrr::future_map2(.x = stan_data,
+     ## map2(.x=stan_data,
+     ##                  .y = name,
+     ##                  .f = ~ {
+     ##                    nm <- paste0(data_path, "mod_", name, ".rds")
+     ##                    if (file.exists(nm)) {
+     ##                      cat(paste("\n", "Skipping", name, "as it already exists\n"))
+     ##                      return(nm)
+     ##                    }
+     ##                    mod_stan <-
+     ##                      model_stan$sample(
+     ##                                   data =  .x,
+     ##                                   seed =  123,
+     ##                                   iter_sampling =  5000,
+     ##                                   iter_warmup =  1000,
+     ##                                   ## init = init,
+     ##                                   thin =  5,
+     ##                                   chains =  3,
+     ##                                   parallel_chains =  3,
+     ##                                   adapt_delta =  0.99,
+     ##                                   output_dir =  data_path,
+     ##                                   )
+     ##                    saveRDS(mod_stan,
+     ##                            file = nm
+     ##                            )
+     ##                    nm
+     ##                  }#,
+     ##        #.progress=TRUE
+     ##                  ))
       ## ----end
       benthic_models
     }
@@ -181,8 +227,8 @@ fit_models <- function() {
                                   posteriors <-
                                     mod$draws(variables = "Years") |>
                                     posterior::as_draws_df() |>
-                                    mutate(across(starts_with("Years"), plogis)) 
-                                  nm <- paste0(data_path, "posteriors_", name, ".rds")
+                                    mutate(across(starts_with("Years"), plogis))
+                                  nm <- paste0(data_path, "posteriors_", .y, ".rds")
                                   saveRDS(posteriors,
                                           file = nm
                                           )
@@ -208,7 +254,7 @@ fit_models <- function() {
                                  posteriors <- readRDS(.x)
                                  ## vars <- get_variables(mod)
                                  cellmeans <-
-                                   posteriors |> 
+                                   posteriors |>
                                    posterior::summarise_draws(
                                                 median,
                                                 HDInterval::hdi,
@@ -216,7 +262,7 @@ fit_models <- function() {
                                               ) |>
                                    rename(lower_80 = V4, upper_80 = V5) |>
                                    mutate(Year = all_years)
-                                 nm <- paste0(data_path, "cellmeans_", name, ".rds")
+                                 nm <- paste0(data_path, "cellmeans_", .y, ".rds")
                                  saveRDS(cellmeans,
                                          file = nm
                                          )
@@ -308,7 +354,6 @@ fit_models <- function() {
     ## ##   interpolate_values <- interpolate_values_
     ## ##   interpolate_values(1:5, 1, "mean")
     ## ## })
-    
+
   )
 }
-    

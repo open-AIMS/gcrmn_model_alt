@@ -44,7 +44,7 @@ crossref:
   tbl-title: '**Table**'
   tbl-labels: arabic
 engine: knitr
-## execute: 
+## execute:
 ##   cache: true
 jupyter: python3
 output_dir: "docs"
@@ -119,7 +119,7 @@ from different models so as to inform decisions about:
   understanding of the experts
 - whether the raw data themselves are broadly consistent with
   expectations
-  
+
 The candidate models are:
 
 - `stan` - a bespoke Stan model I wrote for the previous GCRMN report
@@ -184,7 +184,7 @@ Establish the global environment and paths
 ```
 
 :::
-  
+
 #### Reef grid
 
 ::: {.panel-tabset}
@@ -201,7 +201,7 @@ Establish the global environment and paths
 ```
 
 :::
-  
+
 #### Ecoregions (MEOWs)
 
 ::: {.panel-tabset}
@@ -355,7 +355,7 @@ Benthic prediction data
 
 #### Process benthic data
 
-1. Process benthic data (Part 1. add ecoregions) 
+1. Process benthic data (Part 1. add ecoregions)
 
 ```{r}
 #| label: process benthic data Part 1. add ecoregions
@@ -377,7 +377,7 @@ Benthic prediction data
 #| cache: false
 ```
 
-3. Process benthic data (Part 3. add factors) 
+3. Process benthic data (Part 3. add factors)
 
 ```{r}
 #| label: process benthic data Part 3. add factors
@@ -707,7 +707,7 @@ the respective proportions of reef areas in GCRMN Regions and
 Globally.
 
 ::: {.figure #fig-weights}
-![](resources/weights_final_version.png){width=600px} 
+![](resources/weights_final_version.png){width=600px}
 
 Illustration of the relative reef area represented by each 10x10km
 grid tile within three MEOW Ecoregions. The hue of reef fill is
@@ -753,7 +753,7 @@ The Dataset effects were included to act as proxies for all the many
 and varying ways that different datasets differ including depth,
 sampling unit type (quadrats, transects, etc) and observer experience.
 Weakly informative normal priors were applied to the Dataset
-effects.  
+effects.
 
 The statistical models can be summarised as:
 
@@ -797,7 +797,7 @@ then summarised by back-transforming to the response scale (inverse
 logit transform in the case of beta models) and calculating the means
 and highest probability density intervals (80\% and 95\%).  Similarly,
 the un-standardised GCRMN Sub-region posteriors were aggregated (with
-weights) up to GCRMN Region and then Global level 
+weights) up to GCRMN Region and then Global level
 (see [@fig-schematichierarchy]b & [@fig-schematic]).
 
 
@@ -881,7 +881,7 @@ Set up the nested data for modelling
 #| echo: false
 cat(readLines("../R/model2.stan"), sep = "\n")
 ```
- 
+
 ### Fit STAN models
 
 ```{r}
@@ -919,7 +919,7 @@ In each of the following sections:
 - in the case of Subregions and Regions, the light orange band only
   appears for spans of years for which there were no observations
   across all the consistuent spatial units.
-  
+
 ### Ecoregion (MEOW) level
 
 
@@ -972,7 +972,7 @@ In each of the following sections:
 #| echo: false
 #| warning: false
 #| message: false
-#| cache: true
+#| cache: false
 benthic_posteriors_ecoregions <- targets::tar_read("aggregate_ecoregion_plots_", store = "../R/_targets")
 ```
 
@@ -983,7 +983,7 @@ benthic_posteriors_ecoregions <- targets::tar_read("aggregate_ecoregion_plots_",
 #| output: asis
 #| warning: false
 #| message: false
-#| cache: true
+#| cache: false
 cat("::: {.panel-tabset}\n")
 for (reg in sort(unique(benthic_posteriors_ecoregions$region))) {
   dat_reg <- benthic_posteriors_ecoregions |>
@@ -999,10 +999,20 @@ for (reg in sort(unique(benthic_posteriors_ecoregions$region))) {
       cat(paste0("###### ", eco, "\n"))
       dat_eco <- dat_subreg |>
         filter(ecoregion == eco)
-      fig <- dat_eco$plot[[1]]
-      fig2 <- str_replace(fig, "pdp", "pdpraw")
-      cat(paste0("![](", fig2, "){width=300px}",
-                 "![](", fig, "){width=300px}\n\n"))
+      cat("::: {.panel-tabset}\n")
+      for (catg in sort(unique(dat_eco$category))) {
+        cat(paste0("####### ", catg, "\n"))
+        dat_cat <- dat_eco |>
+          filter(category == catg)
+        fig <- dat_cat$plot[[1]]
+        fig2 <- str_replace(fig, "pdp", "pdpraw")
+        fig3 <- str_replace(fig, "pdp", "pdprawxgboost")
+        cat(paste0("![](", fig2, "){width=300px}",
+          "![](", fig, "){width=300px}",
+          "![](", fig3, "){width=300px}\n\n"
+        ))
+      }
+      cat(":::\n")
     }
     cat(":::\n")
   }
@@ -1011,6 +1021,7 @@ for (reg in sort(unique(benthic_posteriors_ecoregions$region))) {
 cat(":::\n")
 
 ```
+
 
 ### Subregion level
 
@@ -1069,7 +1080,7 @@ Coral Reefs of the World spatial layers.
 #| echo: false
 #| warning: false
 #| message: false
-#| cache: true
+#| cache: false
 benthic_posteriors_subregions <- targets::tar_read("aggregate_subregion_plots_", store = "../R/_targets")
 wts <- targets::tar_read("process_spatial_weights_", store = "../R/_targets")
 ```
@@ -1081,7 +1092,7 @@ wts <- targets::tar_read("process_spatial_weights_", store = "../R/_targets")
 #| output: asis
 #| warning: false
 #| message: false
-#| cache: true
+#| cache: false
 cat("::: {.panel-tabset}\n")
 for (reg in sort(unique(benthic_posteriors_subregions$region))) {
   dat_reg <- benthic_posteriors_subregions |>
@@ -1092,19 +1103,29 @@ for (reg in sort(unique(benthic_posteriors_subregions$region))) {
     cat(paste0("###### ", subreg, "\n"))
     dat_subreg <- dat_reg |>
       filter(subregion == subreg)
-      fig <- dat_subreg$plot[[1]]
-      cat(paste0("![](", fig, "){width=300px}\n\n"))
-    wts |>
-      mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |> 
-      filter(GCRMN_region == reg,
-             GCRMN_subregion == subreg) |>
-      dplyr::select(Region = GCRMN_region,
-                    Subregion = GCRMN_subregion,
-                    Ecoregion = ECOREGION,
-                    Area = area,
-                    Weight = wt) |>
-      knitr::kable(caption = "Ecoregion (MEOW) reef area and weights applied in the aggregation up to Subregion") |>
-      print()
+    cat("::: {.panel-tabset}\n")
+    for (catg in sort(unique(dat_subreg$category))) {
+      cat(paste0("####### ", catg, "\n"))
+      dat_cat <- dat_subreg |>
+        filter(category == catg)
+      fig <- dat_cat$plot[[1]]
+      fig2 <- str_replace(fig, "pdp", "pdprawxgboost")
+      cat(paste0("![](", fig, "){width=300px}",
+        "![](", fig2, "){width=300px}\n\n"
+      ))
+      wts |>
+        mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
+        filter(GCRMN_region == reg,
+          GCRMN_subregion == subreg) |>
+        dplyr::select(Region = GCRMN_region,
+          Subregion = GCRMN_subregion,
+          Ecoregion = ECOREGION,
+          Area = area,
+          Weight = wt) |>
+        knitr::kable(caption = "Ecoregion (MEOW) reef area and weights applied in the aggregation up to Subregion") |>
+        print()
+    }
+    cat(":::\n")
   }
   cat(":::\n")
 }
@@ -1165,7 +1186,7 @@ Coral Reefs of the World spatial layers.
 #| echo: false
 #| warning: false
 #| message: false
-#| cache: true
+#| cache: false
 benthic_posteriors_regions <- targets::tar_read("aggregate_region_plots_", store = "../R/_targets")
 ```
 
@@ -1176,25 +1197,34 @@ benthic_posteriors_regions <- targets::tar_read("aggregate_region_plots_", store
 #| output: asis
 #| warning: false
 #| message: false
-#| cache: true
+#| cache: false
 cat("::: {.panel-tabset}\n")
 for (reg in sort(unique(benthic_posteriors_regions$region))) {
   dat_reg <- benthic_posteriors_regions |>
     filter(region == reg)
   cat(paste0("#### ", reg, "\n"))
-  fig <- dat_reg$plot[[1]]
-  cat(paste0("![](", fig, "){width=300px}\n\n"))
-  wts |>
-    mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |> 
-    filter(GCRMN_region == reg) |> 
-    dplyr::select(Region = GCRMN_region,
-                  Subregion = GCRMN_subregion,
-                  Area = subregion_area) |>
-    group_by(Region, Subregion) |>
-    summarise(Area = unique(Area), .groups = "drop") |> 
-    mutate(wt = Area / sum(Area)) |> 
-    knitr::kable(caption = "Subregion reef area and weights applied in the aggregation up to Region") |>
-    print()
+  cat("::: {.panel-tabset}\n")
+  for (catg in sort(unique(dat_reg$category))) {
+    cat(paste0("####### ", catg, "\n"))
+    dat_cat <- dat_reg |>
+      filter(category == catg)
+    fig <- dat_cat$plot[[1]]
+    fig2 <- str_replace(fig, "pdp", "pdprawxgboost")
+    cat(paste0("![](", fig, "){width=300px}",
+      "![](", fig2, "){width=300px}\n\n"))
+    wts |>
+      mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
+      filter(GCRMN_region == reg) |>
+      dplyr::select(Region = GCRMN_region,
+        Subregion = GCRMN_subregion,
+        Area = subregion_area) |>
+      group_by(Region, Subregion) |>
+      summarise(Area = unique(Area), .groups = "drop") |>
+      mutate(wt = Area / sum(Area)) |>
+      knitr::kable(caption = "Subregion reef area and weights applied in the aggregation up to Region") |>
+      print()
+  }
+  cat(":::\n")
 }
 cat(":::\n")
 ```

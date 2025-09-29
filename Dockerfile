@@ -71,11 +71,21 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 ARG QUARTO_VERSION="1.7.26"
-RUN curl -o quarto-linux-amd64.deb -L https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb
-RUN gdebi --non-interactive quarto-linux-amd64.deb
-
+#RUN curl -o quarto-linux-amd64.deb -L https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb
+#RUN gdebi --non-interactive quarto-linux-amd64.deb
+# Get correct arch for Quarto (arm64 or amd64)
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -L -o quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-${ARCH}.tar.gz && \
+    tar -xzf quarto.tar.gz && \
+    mv quarto-${QUARTO_VERSION} /opt/quarto && \
+    ln -s /opt/quarto/bin/quarto /usr/local/bin/quarto
 
 ## Python
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    wget \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
