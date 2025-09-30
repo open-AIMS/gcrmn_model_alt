@@ -44,7 +44,9 @@ aggregate_models <- function() {
       wts <-
         wts |>
         mutate(region = GCRMN_region,
+               region = str_replace(region, "East Asia", "EAS"),
                subregion = str_replace(GCRMN_subregion, "\\.", " "),
+               subregion = str_replace(subregion, "East Asia", "EAS"),
                ecoregion = ECOREGION
                )
       benthic_posteriors <-
@@ -199,7 +201,9 @@ aggregate_models <- function() {
       wts <-
         wts |>
         mutate(region = GCRMN_region,
+               region = str_replace(region, "East Asia", "EAS"),
                subregion = str_replace(GCRMN_subregion, "\\.", " "),
+               subregion = str_replace(subregion, "East Asia", "EAS"),
                ecoregion = ECOREGION
                )
       benthic_posteriors_subregions <-
@@ -319,7 +323,9 @@ aggregate_models <- function() {
       wts <-
         wts |>
         mutate(region = GCRMN_region,
+               region = str_replace(region, "East Asia", "EAS"),
                subregion = str_replace(GCRMN_subregion, "\\.", " "),
+               subregion = str_replace(subregion, "East Asia", "EAS"),
                ecoregion = ECOREGION
                ) |>
         dplyr::select(region, subregion, subregion_area) |>

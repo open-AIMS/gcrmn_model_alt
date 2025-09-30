@@ -480,6 +480,7 @@ models are discussed in section @sec-models.
 ```{tikz}
 %| label: fig-schematichierarchy
 %| engine: tikz
+%| eval: false
 %| echo: false
 %| class: tikz
 %| out-width: 600px
@@ -1082,7 +1083,10 @@ Coral Reefs of the World spatial layers.
 #| message: false
 #| cache: false
 benthic_posteriors_subregions <- targets::tar_read("aggregate_subregion_plots_", store = "../R/_targets")
-wts <- targets::tar_read("process_spatial_weights_", store = "../R/_targets")
+wts <- targets::tar_read("process_spatial_weights_", store = "../R/_targets") |>
+  mutate(GCRMN_region = str_replace(GCRMN_region, "East Asia", "EAS"),
+    GCRMN_subregion = str_replace(GCRMN_subregion, "East Asia", "EAS")
+  )
 ```
 
 ```{r}

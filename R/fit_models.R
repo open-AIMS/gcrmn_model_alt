@@ -129,13 +129,13 @@ fit_models <- function() {
       ## ---- fit models stan
       print(unique(benthic_models$region))
       model_stan <- cmdstanr::cmdstan_model(stan_file =  "model2.stan")
-      benthic_models <- benthic_models |>
+      ## benthic_models <- benthic_models |>
         ## filter(ecoregion == "Fiji Islands", category == "Hard coral") |>
         ## filter(ecoregion == "Eastern Caribbean", category == "Hard coral") |>
-        filter(category %in% c("Hard coral", "Macroalgae"))
+        ## filter(category %in% c("Hard coral", "Macroalgae"))
 
       options(future.globals.maxSize = 2 * 1024^3)
-      future::plan(future::multisession, workers = 9)
+      future::plan(future::multisession, workers = 15)
       results <- furrr::future_map2(.x = benthic_models$stan_data,
         .y = benthic_models$name,
         .f = ~ {

@@ -1,6 +1,8 @@
 ## for interactive development within the docker container
 ## cd ~/Projects/gcrmn_model_alt
 ## docker run --rm -it -v $PWD:/home/Project gcrmn_alt
+## OR
+## singularity exec -B .:/home/Project r-analysis2.sif make run_R 
 ## setwd("R")
 
 # Load the targets package
