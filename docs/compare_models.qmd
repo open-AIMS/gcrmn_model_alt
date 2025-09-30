@@ -106,6 +106,7 @@ figcaption {
 }
 ```
 
+
 ## Purpose
 
 The primary purpose of this page is to contrast the ability of various
@@ -123,6 +124,9 @@ from different models so as to inform decisions about:
 The candidate models are:
 
 - `stan` - a bespoke Stan model I wrote for the previous GCRMN report
+- `xgboost` - bootstrapped xgboost (boosted regression trees) written
+  by Jeremy Wicquart (codes for these models are not presented in this
+  document)
 
 ## Preparations
 
@@ -802,7 +806,13 @@ weights) up to GCRMN Region and then Global level
 (see [@fig-schematichierarchy]b & [@fig-schematic]).
 
 
+### (Bootstrapped) xgboost (boosted regression tree) model
 
+Jeremy Wicquart has developed an xbgoost model that incorporates a
+suite of environmental covariates in addition to space and time.  The
+outputs of these models (at each of ecoregion, subregion and region)
+were provided in a single spreadsheet and are presented along side the
+Bayesian Hierarchical models in the sections below.
 
 ## Modelled trends
 
@@ -909,17 +919,50 @@ cat(readLines("../R/model2.stan"), sep = "\n")
 
 In each of the following sections:
 
+- the dark blue line represents the mean of the cover estimates
+  (bootstrapped xgboost model)
+- the blue band represents the 95% interval of cover estimates
+  (bootstrapped xgboost model)
 - the white line represents the posterior median of cover estimates
+  (Bayesian Heirarchical model)
 - the darkest orange band represents the 80% credibility interval of
-  cover estimates
+  cover estimates (Bayesian Heirarchical model)
 - the orange band represents the 95% credibility interval of the
-  cover estimates
+  cover estimates (Bayesian Heirarchical model)
 - the light orange band represents the 95% credibility interval of
   cover estimates for years in which there were no observed data in
-  the presented spatial scale (e.g. Ecoregion, Subregion or Region).
+  the presented spatial scale (e.g. Ecoregion, Subregion or Region)
+  (Bayesian Heirarchical model).
 - in the case of Subregions and Regions, the light orange band only
   appears for spans of years for which there were no observations
   across all the consistuent spatial units.
+
+Note, the weights used in the aggregation of the Bayesian Hierarchical
+models are recycled from the 2020 GCRMN analysis and need to be
+updated.  In particular, the latest version of the data have some
+ecoregion (MEOW) differences that mean that some of the 2020
+ecoregions are not absent and there are now some ecoregions in the
+data that were not present in the 2020 data.  The combinations of
+figures listed below are aligned with the ecoregions present in the
+2020 report and therefore are missing some ecoregions:
+
+- Amazonia
+- Arafura Sea
+- Cargados Carajos/Tromelin Island
+- Clipperton
+- Eastern India
+- Guianan
+- Halmahera
+- Southeast Madagascar
+- Western India
+
+And contain some ecoregions for which there are no associated xgboost
+models:
+
+- Cocos Islands
+- Northern Gulf of Mexico
+- Northern Galapagos Islands
+- Western Galapagos Islands
 
 ### Ecoregion (MEOW) level
 
@@ -1232,3 +1275,8 @@ for (reg in sort(unique(benthic_posteriors_regions$region))) {
 }
 cat(":::\n")
 ```
+
+## Codebase
+
+The full code repository can be found at
+<https://github.com/open-AIMS/gcrmn_model_alt>.

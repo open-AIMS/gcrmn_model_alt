@@ -113,6 +113,20 @@ make docs_container
 
 ### Via apptainer/singularity
 
+1. submit a job to slurm that runs the R codes.  This will run all the
+   R based analyses using the `targets` package to ensure all steps
+   are performed in the correct order.
+
+```
+sbatch analysis.slurm
+```
+
+2. submit a job to slurm that renders the document. This will render
+   the quarto document to html
+
+```
+sbatch docs.slurm
+```
 
 ## Debugging the code
 
