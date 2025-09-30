@@ -79,7 +79,7 @@ make build_docker
 ## Running the codes
 
 
-## Bare metal
+### Via bare metal
 
 1. run the R codes.  This will run all the R based analyses using the
    `targets` package to ensure all steps are performed in the correct
@@ -89,10 +89,78 @@ make build_docker
 make run_R
 ```
 
+2. render the document. This will render the quarto document to html
 
-## Docker
+```
+make render_docs
+```
 
-## Apptainer/singularity
+### Via docker
+
+1. run the R codes.  This will run all the R based analyses using the
+   `targets` package to ensure all steps are performed in the correct
+   order.
+
+```
+make R_container
+```
+
+2. render the document. This will render the quarto document to html
+
+```
+make docs_container
+```
+
+### Via apptainer/singularity
 
 
 ## Debugging the code
+
+### Via docker
+In order to edit the code (for the purpose of debugging or adding
+additional features):
+
+1. load the `R/_targets.R` script
+2. start a new terminal (**in the project root folder**)
+3. run
+
+```
+docker run --rm -it -v $PWD:/home/Project gcrmn_alt
+```
+
+4. set the working directory to the `R` directory
+
+```
+setwd("R")
+```
+
+5. load the necessary targets libraries
+
+```
+library(targets)
+library(tarchetypes)
+```
+
+6. load the other necessary libraries
+
+```
+packages = c("tidyverse", "sf", "synthos",
+  "glmmTMB", "emmeans", "DHARMa", "patchwork",
+  "brms", "rstan", "bayesplot", "tidybayes",
+  "caret", "xgboost", "tidymodels",
+  "rnaturalearth", "rlang",
+  "posterior", "gbm", "dbarts", "HDInterval"
+)
+lapply(packages, library, character.only = TRUE)
+```
+
+7. navigate the code as usual
+
+
+### Via apptainer/singularity
+
+Follow the steps for docker except replace step 3 with:
+
+```
+singularity exec -B .:/home/Project r-analysis2.sif R
+```
