@@ -1,3 +1,10 @@
 data/cellmeans*
 data/mod*
 data/posteriors*
+*.log
+*.sif
+*.html
+*.swp
+*#
+*~
+R/_targets/

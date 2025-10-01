@@ -143,6 +143,11 @@ aggregate_models <- function() {
                                                 title = title,
                                                 ytitle = ytitle,
                                                 include_raw = FALSE)
+                        g1 <- g1 +
+                          theme(panel.grid.major.y = element_line(),
+                                panel.grid.minor.y = element_line(),
+                                panel.grid.major.x = element_line()
+                               )
                         if (!str_detect(..4, "Cocos Islands|Northern Gulf of Mexico|Northern Galapagos Islands|Western Galapagos Islands")) {
                           g1 <- g1 +
                             geom_ribbon(data = xgboost, inherit.aes = FALSE,
@@ -286,6 +291,12 @@ aggregate_models <- function() {
                                                 title = title,
                                                 ytitle = ytitle,
                                                 include_raw = FALSE)
+
+                        g1 <- g1 +
+                          theme(panel.grid.major.y = element_line(),
+                                panel.grid.minor.y = element_line(),
+                                panel.grid.major.x = element_line()
+                               )
                         nm <- paste0(output_path, "figures/subregion_pdp_", "_", ..3, ".png")
                         ggsave(
                           filename = nm,
@@ -411,6 +422,11 @@ aggregate_models <- function() {
                                                 title = title,
                                                 ytitle = ytitle,
                                                 include_raw = FALSE)
+                        g1 <- g1 +
+                          theme(panel.grid.major.y = element_line(),
+                                panel.grid.minor.y = element_line(),
+                                panel.grid.major.x = element_line()
+                               )
                         nm <- paste0(output_path, "figures/region_pdp_", "_", ..3, ".png")
                         ggsave(
                           filename = nm,
