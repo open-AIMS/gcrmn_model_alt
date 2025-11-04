@@ -98,6 +98,7 @@ aggregate_models <- function() {
       data_path <- fit_models_global_parameters_$data_path
       ## ---- aggregate xgboost data
       data_xgboost <- read_csv(paste0(data_path, "primary/data_xgboost.csv"))
+      data_xgboost <- get(load("../data/primary/xgboost-trends_2025-09-26.RData"))
       ## ----end
       data_xgboost
     }),
@@ -306,6 +307,8 @@ aggregate_models <- function() {
 
                         nm2 <- paste0(output_path,
                           "figures/subregion_pdprawxgboost_", "_", ..3, ".png")
+                        #print(xgboost)
+                        if (!is.null(xgboost)) {
                         g2 <- g1 +
                           geom_ribbon(data = xgboost, inherit.aes = FALSE,
                             aes(y = mean, x = year,
@@ -313,6 +316,10 @@ aggregate_models <- function() {
                             color = NA, fill = "blue", alpha = 0.5) +
                           geom_line(data = xgboost, inherit.aes = FALSE,
                             aes(y = mean, x = year), colour = "blue")
+                          
+                        } else {
+                          g1 <- g1
+                        }
                         ggsave(
                           filename = nm2,
                           g2,
@@ -435,6 +442,7 @@ aggregate_models <- function() {
                         )
                         nm2 <- paste0(output_path,
                           "figures/region_pdprawxgboost_", "_", ..3, ".png")
+                        if (!is.null(xgboost)) {
                         g2 <- g1 +
                           geom_ribbon(data = xgboost, inherit.aes = FALSE,
                             aes(y = mean, x = year,
@@ -442,6 +450,9 @@ aggregate_models <- function() {
                             color = NA, fill = "blue", alpha = 0.5) +
                           geom_line(data = xgboost, inherit.aes = FALSE,
                             aes(y = mean, x = year), colour = "blue")
+                        } else {
+                          g2 <- g1
+                        }
                         ggsave(
                           filename = nm2,
                           g2,
