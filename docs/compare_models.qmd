@@ -596,6 +596,15 @@ edge from parent node [right] {$\omega_{r_3}$}
 
 ```
 
+::: {.figure #fig-schematichierarchy}
+![](resources/schematicHierarchy-1.png){width=600px}
+
+Schematic representation of the a) individual MEOW Ecoregion Bayesian
+modelling hierarchies and b) spatial aggregation hierarchy.  Note the
+quadrat-level is de-emphasized to highlight that not all data sources
+include this unit of observation.  The $\omega$ symbolise the use of
+spatial weights.
+:::
 
 
 #### Spatial hierarchy
@@ -937,6 +946,9 @@ In each of the following sections:
   appears for spans of years for which there were no observations
   across all the consistuent spatial units.
 
+
+
+<!--
 Note, the weights used in the aggregation of the Bayesian Hierarchical
 models are recycled from the 2020 GCRMN analysis and need to be
 updated.  In particular, the latest version of the data have some
@@ -956,6 +968,7 @@ figures listed below are aligned with the ecoregions present in the
 - Southeast Madagascar
 - Western India
 
+
 And contain some ecoregions for which there are no associated xgboost
 models:
 
@@ -963,9 +976,27 @@ models:
 - Northern Gulf of Mexico
 - Northern Galapagos Islands
 - Western Galapagos Islands
+-->
+
+
 
 ### Ecoregion (MEOW) level
 
+Within Ecoregions, tremporal trends are represented by four figures:
+
+- top left: Bayesian Hierachical (orange) and xgboost (blue) estimates
+  for the entire GCRMN temporal domain overlayed onto observed data
+
+- top right: Bayesian Hierachical (orange) and xgboost (blue)
+  estimates for the temporal domain of the observed data for that
+  Ecoregion overlayed onto observed data
+
+- bottom left: Bayesian Hierachical (orange) and xgboost (blue) estimates
+  for the entire GCRMN temporal domain
+
+- top right: Bayesian Hierachical (orange) and xgboost (blue)
+  estimates for the temporal domain of the observed data for that
+  Ecoregion
 
 ::: {.callout-note collapse=true}
 #### Show code
@@ -1044,16 +1075,27 @@ for (reg in sort(unique(benthic_posteriors_ecoregions$region))) {
       dat_eco <- dat_subreg |>
         filter(ecoregion == eco)
       cat("::: {.panel-tabset}\n")
-      for (catg in sort(unique(dat_eco$category))) {
+      xcats <- levels(forcats::fct_relevel(unique(dat_eco$category), c('Hard coral', 'Macroalgae'))) 
+      for (catg in xcats) {
+      ## for (catg in sort(unique(dat_eco$category))) {
         cat(paste0("####### ", catg, "\n"))
         dat_cat <- dat_eco |>
           filter(category == catg)
         fig <- dat_cat$plot[[1]]
+        fig1a <- str_replace(fig, "pdp", "pdp_a")
         fig2 <- str_replace(fig, "pdp", "pdpraw")
+        fig2a <- str_replace(fig, "pdp", "pdpraw_a")
         fig3 <- str_replace(fig, "pdp", "pdprawxgboost")
-        cat(paste0("![](", fig2, "){width=300px}",
-          "![](", fig, "){width=300px}",
-          "![](", fig3, "){width=300px}\n\n"
+        fig3a <- str_replace(fig, "pdp", "pdprawxgboost_a")
+        cat(paste0(
+          "![](", fig3, "){width=400px}",
+          "![](", fig3a, "){width=400px}",
+          "![](", fig, "){width=400px}",
+          "![](", fig1a, "){width=400px}\n\n"
+          ## "![](", fig, "){width=300px}",
+          ## "![](", fig1a, "){width=300px}",
+          ## "![](", fig3, "){width=300px}",
+          ## "![](", fig3a, "){width=300px}\n\n"
         ))
       }
       cat(":::\n")
@@ -1074,6 +1116,30 @@ averages of Ecoregion posteriors (at the draw level). Weights are
 based on relative reef areas of the Ecoregions as calculated from
 Coral Reefs of the World spatial layers.
 
+Note, the weights are caculated as the relative reef areas of the
+Ecoregions **for which there were observed data**.  There were eight
+Ecoregions for which there were no observed/available benthic data for
+this installment of the GCRMN report:
+
+- Amazonia
+- Arafura Sea
+- Cargados Carajos/Tromelin Island
+- Clipperton
+- Eastern India
+- Guianan
+- Halmahera
+- Ogasawara Islands
+- Southeast Madagascar
+- Western India
+
+Within Subregions, tremporal trends are represented by two figures:
+
+- top left: Bayesian Hierachical (orange) and xgboost (blue) estimates
+  for the entire GCRMN temporal domain 
+
+- top right: Bayesian Hierachical (orange) and xgboost (blue)
+  estimates for the temporal domain of the observed data for that
+  Subregion
 
 ::: {.callout-note collapse=true}
 #### Show code
@@ -1130,6 +1196,7 @@ wts <- targets::tar_read("process_spatial_weights_", store = "../R/_targets") |>
   mutate(GCRMN_region = str_replace(GCRMN_region, "East Asia", "EAS"),
     GCRMN_subregion = str_replace(GCRMN_subregion, "East Asia", "EAS")
   )
+wts_subregions <- targets::tar_read("wts_subregions_", store = "../R/_targets") 
 ```
 
 ```{r}
@@ -1151,24 +1218,39 @@ for (reg in sort(unique(benthic_posteriors_subregions$region))) {
     dat_subreg <- dat_reg |>
       filter(subregion == subreg)
     cat("::: {.panel-tabset}\n")
-    for (catg in sort(unique(dat_subreg$category))) {
+    xcats <- levels(forcats::fct_relevel(unique(dat_subreg$category), c('Hard coral', 'Macroalgae'))) 
+    for (catg in xcats) {
+    ## for (catg in sort(unique(dat_subreg$category))) {
       cat(paste0("####### ", catg, "\n"))
       dat_cat <- dat_subreg |>
         filter(category == catg)
       fig <- dat_cat$plot[[1]]
+      fig1a <- str_replace(fig, "pdp", "pdp_a")
       fig2 <- str_replace(fig, "pdp", "pdprawxgboost")
-      cat(paste0("![](", fig, "){width=300px}",
-        "![](", fig2, "){width=300px}\n\n"
+      fig2a <- str_replace(fig, "pdp", "pdprawxgboost_a")
+      cat(paste0(
+        ## "![](", fig, "){width=300px}",
+        ## "![](", fig1a, "){width=300px}",
+        "![](", fig2, "){width=400px}",
+        "![](", fig2a, "){width=400px}\n\n"
       ))
-      wts |>
-        mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
-        filter(GCRMN_region == reg,
-          GCRMN_subregion == subreg) |>
-        dplyr::select(Region = GCRMN_region,
-          Subregion = GCRMN_subregion,
-          Ecoregion = ECOREGION,
-          Area = area,
-          Weight = wt) |>
+      ## wts |>
+      ##   mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
+      ##   filter(GCRMN_region == reg,
+      ##     GCRMN_subregion == subreg) |>
+      ##   dplyr::select(Region = GCRMN_region,
+      ##     Subregion = GCRMN_subregion,
+      ##     Ecoregion = ECOREGION,
+      ##     Area = area,
+      ##     Weight = wt) |>
+    wts_subregions |>
+      filter(region==reg, subregion==subreg) |>
+      dplyr::select(Region=region,
+        Subregion=subregion,
+        Ecoregion=ECOREGION,
+        Area=area,
+        Weight = wt
+      ) |>
         knitr::kable(caption = "Ecoregion (MEOW) reef area and weights applied in the aggregation up to Subregion") |>
         print()
     }
@@ -1185,6 +1267,15 @@ Region level estimates are generated by calculating weighted
 averages of Subregion posteriors (at the draw level). Weights are
 based on relative reef areas of the Subregions as calculated from
 Coral Reefs of the World spatial layers.
+
+Within Regions, tremporal trends are represented by two figures:
+
+- top left: Bayesian Hierachical (orange) and xgboost (blue) estimates
+  for the entire GCRMN temporal domain 
+
+- top right: Bayesian Hierachical (orange) and xgboost (blue)
+  estimates for the temporal domain of the observed data for that
+  Region
 
 ::: {.callout-note collapse=true}
 #### Show code
@@ -1235,6 +1326,7 @@ Coral Reefs of the World spatial layers.
 #| message: false
 #| cache: false
 benthic_posteriors_regions <- targets::tar_read("aggregate_region_plots_", store = "../R/_targets")
+wts_regions <- targets::tar_read("wts_regions_", store = "../R/_targets") 
 ```
 
 ```{r}
@@ -1251,29 +1343,151 @@ for (reg in sort(unique(benthic_posteriors_regions$region))) {
     filter(region == reg)
   cat(paste0("#### ", reg, "\n"))
   cat("::: {.panel-tabset}\n")
-  for (catg in sort(unique(dat_reg$category))) {
+  xcats <- levels(forcats::fct_relevel(unique(dat_reg$category), c('Hard coral', 'Macroalgae'))) 
+  for (catg in xcats) {
+  ## for (catg in sort(unique(dat_reg$category))) {
     cat(paste0("####### ", catg, "\n"))
     dat_cat <- dat_reg |>
       filter(category == catg)
     fig <- dat_cat$plot[[1]]
+    fig1a <- str_replace(fig, "pdp", "pdp_a")
     fig2 <- str_replace(fig, "pdp", "pdprawxgboost")
-    cat(paste0("![](", fig, "){width=300px}",
-      "![](", fig2, "){width=300px}\n\n"))
-    wts |>
-      mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
-      filter(GCRMN_region == reg) |>
-      dplyr::select(Region = GCRMN_region,
-        Subregion = GCRMN_subregion,
-        Area = subregion_area) |>
-      group_by(Region, Subregion) |>
-      summarise(Area = unique(Area), .groups = "drop") |>
-      mutate(wt = Area / sum(Area)) |>
+    fig2a <- str_replace(fig, "pdp", "pdprawxgboost_a")
+    cat(paste0(
+      ## "![](", fig, "){width=300px}",
+      ## "![](", fig1a, "){width=300px}",
+      "![](", fig2, "){width=400px}",
+      "![](", fig2a, "){width=400px}\n\n"
+      ))
+    ## wts |>
+    ##   mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
+    ##   filter(GCRMN_region == reg) |>
+    ##   dplyr::select(Region = GCRMN_region,
+    ##     Subregion = GCRMN_subregion,
+    ##     Area = subregion_area) |>
+    ##   group_by(Region, Subregion) |>
+    ##   summarise(Area = unique(Area), .groups = "drop") |>
+    ##   mutate(wt = Area / sum(Area)) |>
+    wts_regions |>
+      filter(region==reg) |>
+      dplyr::select(Region=region,
+        Subregion=subregion,
+        Area=subregion_area,
+        Weight = wt
+      ) |>
       knitr::kable(caption = "Subregion reef area and weights applied in the aggregation up to Region") |>
       print()
   }
   cat(":::\n")
 }
 cat(":::\n")
+```
+
+### Global level
+
+Global level estimates are generated by calculating weighted
+averages of Region posteriors (at the draw level). Weights are
+based on relative reef areas of the Regions as calculated from
+Coral Reefs of the World spatial layers.
+
+::: {.callout-note collapse=true}
+#### Show code
+
+```{r}
+#| label: interpolate values function
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: stan partial plot function
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: aggregate_global
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+```{r}
+#| label: aggregate_global_plots
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+```{r}
+#| label: read aggregate global plots
+#| eval: true
+#| echo: false
+#| warning: false
+#| message: false
+#| cache: false
+benthic_posteriors_global <- targets::tar_read("aggregate_global_plots_", store = "../R/_targets")
+wts_global <- targets::tar_read("wts_global_", store = "../R/_targets") 
+```
+
+```{r}
+#| label: aggregate global plots
+#| eval: true
+#| echo: false
+#| output: asis
+#| warning: false
+#| message: false
+#| cache: false
+cat("::: {.panel-tabset}\n")
+## for (reg in sort(unique(benthic_posteriors_regions$region))) {
+##   dat_reg <- benthic_posteriors_regions |>
+##     filter(region == reg)
+##   cat(paste0("#### ", reg, "\n"))
+##   cat("::: {.panel-tabset}\n")
+  xcats <- levels(forcats::fct_relevel(unique(benthic_posteriors_global$category), c('Hard coral', 'Macroalgae'))) 
+  for (catg in xcats) {
+  ## for (catg in sort(unique(benthic_posteriors_global$category))) {
+    cat(paste0("####### ", catg, "\n"))
+    dat_cat <- benthic_posteriors_global |>
+      filter(category == catg)
+    fig <- dat_cat$plot[[1]]
+    fig1a <- str_replace(fig, "pdp", "pdp_a")
+    fig2 <- str_replace(fig, "pdp", "pdprawxgboost")
+    fig2a <- str_replace(fig, "pdp", "pdprawxgboost_a")
+    cat(paste0(
+      ## "![](", fig, "){width=400px}",
+      "![](", fig2, "){width=600px}\n\n"
+      ))
+    ## wts |>
+    ##   mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
+    ##   filter(GCRMN_region == reg) |>
+    ##   dplyr::select(Region = GCRMN_region,
+    ##     Subregion = GCRMN_subregion,
+    ##     Area = subregion_area) |>
+    ##   group_by(Region, Subregion) |>
+    ##   summarise(Area = unique(Area), .groups = "drop") |>
+    ##   mutate(wt = Area / sum(Area)) |>
+    wts_global |>
+      dplyr::select(Region=region,
+        Area=region_area,
+        Weight = wt
+      ) |>
+      knitr::kable(caption = "Region reef area and weights applied in the aggregation up to Global") |>
+      print()
+  }
+  cat(":::\n")
 ```
 
 ## Codebase

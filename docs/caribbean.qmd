@@ -162,6 +162,8 @@ wts <- targets::tar_read("process_spatial_weights_", store = "../R/_targets") |>
   mutate(GCRMN_region = str_replace(GCRMN_region, "East Asia", "EAS"),
     GCRMN_subregion = str_replace(GCRMN_subregion, "East Asia", "EAS")
   )
+wts_subregions <- targets::tar_read("wts_subregions_", store = "../R/_targets") 
+wts_regions <- targets::tar_read("wts_regions_", store = "../R/_targets") 
 ```
 
 ```{r}
@@ -188,6 +190,7 @@ dat_reg <- benthic_posteriors_ecoregions |>
  dplyr::filter(region == reg)
 ##cat("::: {.panel-tabset}\n")
 cats <- sort(unique(dat_reg$category))
+## cats <- cats |> str_subset("Hard coral|Macroalgae|Turf algae")
 ## Make the order Hard coral, Macroalgae and then the rest (but drop Other fauna)
 cats <- setdiff(cats, "Other fauna")
 cats <- c(intersect(c("Hard coral", "Macroalgae"), cats),
@@ -211,10 +214,14 @@ for (catg in cats) {
         dplyr::filter(ecoregion == eco)
       fig <- dat_eco$plot[[1]]
       fig2 <- str_replace(fig, "pdp", "pdpraw")
+      fig1a <- str_replace(fig, "pdp", "pdp_a")
       fig3 <- str_replace(fig, "pdp", "pdprawxgboost")
+      fig3a <- str_replace(fig, "pdp", "pdprawxgboost_a")
       cat(paste0(#"![](", fig2, "){width=300px}",
                  "![](", fig, "){width=300px}",
-                 "![](", fig3, "){width=300px}\n\n"
+                 "![](", fig3, "){width=300px}\n",
+                 "![](", fig1a, "){width=300px}",
+                 "![](", fig3a, "){width=300px}\n\n"
                  ))
     }
     cat(":::\n")
@@ -229,22 +236,33 @@ for (catg in cats) {
     dat_subreg <- benthic_posteriors_subregions |>
       dplyr::filter(category == catg, subregion == subreg)
     fig <- dat_subreg$plot[[1]]
+    fig1a <- str_replace(fig, "pdp", "pdp_a")
     fig2 <- str_replace(fig, "pdp", "pdpraw")
     fig3 <- str_replace(fig, "pdp", "pdprawxgboost")
+    fig3a <- str_replace(fig, "pdp", "pdprawxgboost_a")
     cat(paste0(#"![](", fig2, "){width=300px}",
       #"![](", fig, "){width=300px}",
-      "![](", fig3, "){width=500px}\n\n"
+      "![](", fig3, "){width=400px}",
+      "![](", fig3a, "){width=400px}\n\n"
     ))
     cat('::: {.callout-note collapse="true"}\n#### View weights\n')
-    wts |>
-      mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
-      filter(GCRMN_region == reg,
-             GCRMN_subregion == subreg) |>
-      dplyr::select(Region = GCRMN_region,
-                    Subregion = GCRMN_subregion,
-                    Ecoregion = ECOREGION,
-                    Area = area,
-                    Weight = wt) |>
+    ## wts |>
+    ##   mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
+    ##   filter(GCRMN_region == reg,
+    ##          GCRMN_subregion == subreg) |>
+    ##   dplyr::select(Region = GCRMN_region,
+    ##                 Subregion = GCRMN_subregion,
+    ##                 Ecoregion = ECOREGION,
+    ##                 Area = area,
+    ##                 Weight = wt) |>
+    wts_subregions |>
+      filter(region==reg, subregion==subreg) |>
+      dplyr::select(Region=region,
+        Subregion=subregion,
+        Ecoregion=ECOREGION,
+        Area=area,
+        Weight = wt
+      ) |>
       knitr::kable(caption = "Ecoregion (MEOW) reef area and weights applied in the aggregation up to Subregion") |>
       print()
     cat(":::\n")
@@ -257,18 +275,28 @@ for (catg in cats) {
     dplyr::filter(category == catg, region == reg)
   fig <- data_reg$plot[[1]]
   fig2 <- str_replace(fig, "pdp", "pdprawxgboost")
+  fig2a <- str_replace(fig, "pdp", "pdprawxgboost_a")
   cat(paste0(#"![](", fig, "){width=300px}",
-             "![](", fig2, "){width=500px}\n\n"))
+             "![](", fig2, "){width=400px}",
+             "![](", fig2a, "){width=400px}\n\n"
+             ))
   cat('::: {.callout-note collapse="true"}\n#### View weights\n')
-  wts |>
-    mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
-    filter(GCRMN_region == reg) |>
-    dplyr::select(Region = GCRMN_region,
-                  Subregion = GCRMN_subregion,
-                  Area = subregion_area) |>
-    group_by(Region, Subregion) |>
-    summarise(Area = unique(Area), .groups = "drop") |>
-    mutate(wt = Area / sum(Area)) |>
+  ## wts |>
+  ##   mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
+  ##   filter(GCRMN_region == reg) |>
+  ##   dplyr::select(Region = GCRMN_region,
+  ##                 Subregion = GCRMN_subregion,
+  ##                 Area = subregion_area) |>
+  ##   group_by(Region, Subregion) |>
+  ##   summarise(Area = unique(Area), .groups = "drop") |>
+  ##   mutate(wt = Area / sum(Area)) |>
+    wts_regions |>
+      filter(region==reg) |>
+      dplyr::select(Region=region,
+        Subregion=subregion,
+        Area=subregion_area,
+        Weight = wt
+      ) |>
     knitr::kable(caption = "Subregion reef area and weights applied in the aggregation up to Region") |>
     print()
     cat(":::\n")
