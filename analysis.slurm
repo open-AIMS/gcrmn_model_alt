@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=45
 #SBATCH --partition=mlogan
-#SBATCH --mem=200GB
+#SBATCH --mem=600GB
 #SBATCH --output=analysis_%j.log
 #SBATCH --mail-user=m.logan@aims.gov.au
 #SBATCH --mail-type=ALL

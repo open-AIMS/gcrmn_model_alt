@@ -127,7 +127,7 @@ helper_functions <- function() {
       interpolate_values <- interpolate_values_
       ## ---- stan partial plot function
       stan_partial_plot <- function(cellmeans, stan_data, data, ytitle,
-                                    title, include_raw = FALSE) {
+                                    title, include_raw = FALSE, min_year = NULL) {
         all_yrs <- cellmeans |>
           reframe(Year =  full_seq(Year, period =  1))
         sampled <- data.frame(Year = cellmeans$Year[stan_data$data_years])
@@ -182,6 +182,22 @@ helper_functions <- function() {
           cellmeans <- sample_yrs
         }
 
+        ## trim with min_years (if available)
+        if (!is.null(min_year)) {
+          cellmeans <- cellmeans |>
+            filter(Year >= min_year) |>
+            droplevels()
+          if (nrow(gap_yrs) > 0) {
+            cellmeans_gap_yrs <- cellmeans_gap_yrs |>
+              filter(Year >= min_year) |>
+              droplevels()
+          }
+          if (nrow(silo_yrs) > 0) {
+            cellmeans_silo_yrs <- cellmeans_silo_yrs |> 
+              filter(Year >= min_year) |>
+              droplevels()
+          }
+        }
         ## make the plot
 
         g1 <-
