@@ -54,7 +54,8 @@ helper_functions <- function() {
         ## Get weights
         grid_wts <- data |>
           group_by(grid_id) |>
-          summarise(area =  unique(sum)) |>
+          ## summarise(area =  unique(sum)) |>
+          summarise(area =  as.numeric(unique(Area))) |>
           ungroup() |>
           mutate(wt =  area / sum(area))
         stan_data <- list(
@@ -64,12 +65,16 @@ helper_functions <- function() {
           X =  X,
           P =  ncol(Xmat),
           Xmat =  Xmat,
+          Z_0_1 =  rep(0, N),
           Z_1_1 =  rep(0, N),
           Z_2_1 =  rep(0, N),
           Z_3_1 =  rep(0, N),
+          J_0 =  as.numeric(factor(data$datasetID)),  ## datasetID
           J_1 =  as.numeric(factor(data$grid_id)),    ## grid_id
           J_2 =  as.numeric(factor(data$cSite)),      ## cSite
           J_3 =  as.numeric(factor(data$cReplicate)), ## cReplicate
+          N_0 =  length(unique(factor(data$datasetID))),
+          M_0 =  1,
           N_1 =  length(unique(factor(data$grid_id))),
           M_1 =  1,
           NC_1 =   0,

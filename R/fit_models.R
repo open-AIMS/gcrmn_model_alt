@@ -128,7 +128,8 @@ fit_models <- function() {
       data_path <- fit_models_global_parameters_$data_path
       ## ---- fit models stan
       print(unique(benthic_models$region))
-      model_stan <- cmdstanr::cmdstan_model(stan_file =  "model2.stan")
+      ## model_stan <- cmdstanr::cmdstan_model(stan_file =  "model2.stan")
+      model_stan <- cmdstanr::cmdstan_model(stan_file =  "gcrmn_model.stan")
       ## benthic_models <- benthic_models |>
         ## filter(ecoregion == "Fiji Islands", category == "Hard coral") |>
         ## filter(ecoregion == "Eastern Caribbean", category == "Hard coral") |>
