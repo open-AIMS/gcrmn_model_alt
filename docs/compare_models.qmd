@@ -772,25 +772,36 @@ effects.
 The statistical models can be summarised as:
 
 \begin{align}
-  y &\sim Beta(\mu\phi, (1-\mu)\phi)\\
-  logit(\mu) &= \mathbf{\beta_y} \mathbf{X_y} + \mathbf{\beta}_d \mathbf{X_d} + \mathbf{\gamma_s} Z_s + \omega\mathbf{\gamma_t} Z_t\\
-  \mathbf{\gamma_s} &= \sigma_s\times z_s\\
+  \mathbf{Y} &\sim Beta(\mu\phi, (1-\mu)\phi)\\
+  logit(\mu) &= \mathbf{\beta_y} \mathbf{X_y} + \mathbf{\gamma_d} Z_d + \omega\mathbf{\gamma_t} Z_t +
+    \mathbf{\gamma_s} Z_s + \mathbf{\gamma_r} Z_r\\
+  \mathbf{\gamma_d} &= \sigma_d\times z_d\\
   \mathbf{\gamma_t} &= \sigma_t\times z_t\\
+  \mathbf{\gamma_s} &= \sigma_s\times z_s\\
+  \mathbf{\gamma_r} &= \sigma_r\times z_r\\
   \phi &\sim \Gamma(0.01,0.01)\\
-  z_s,z_t &\sim N(0,1)\\
-  \sigma_s, \sigma_t &\sim t(3,0,10)\\
-  \mathbf{\beta_{y_i}} &\begin{cases}i=O_y, \sim N(0, \sigma_y)\\i>O_y, \sim N(\beta_{s_{i-1}}, \sigma_{y1})\\i<O_y, \sim N(\beta_{s_{i+1}}, \sigma_{y1})\end{cases}\\
-  \mathbf{\beta_d} &\sim N(0, 0.1)
-  \end{align}
+  z_d,z_t,z_s,z_r &\sim N(0,1)\\
+  \sigma_d,\sigma_t,\sigma_s,\sigma_r &\sim t(3, 0, 1)\\
+  \sigma_y &\sim t(3, 0, 0.5)\\ 
+  \beta_{y} &\sim N(\mathbf{y}, \sigma_y)\\ 
+  \mathbf{y} &\begin{cases}y=I_y, \sim N(O_y, \sigma_y)\\
+     y>I_y, \sim N(\mathbf{y}_{y-1}, 0.1)\\
+     y=G_y, \sim N((\mathbf{y}_{y-1} + \mathbf{y}_{y+1})/2, 0.1)\\
+     y<F_y, \sim N(\mathbf{y}_{y+1}, 0.1)
+  \end{cases}
+\end{align}
 
-where $y$ is the cover of either live hard coral or algae,
-$\mathbf{\beta_y}$ and $\mathbf{\beta_d}$ represent the effects of
-Year and Dataset respectively, $\mathbf{X_y}$ and $\mathbf{X_d}$
-represent cell-means Year and sum-to-zero Dataset model matrices
-respectively, $\mathbf{\gamma_s}$ and $\mathbf{\gamma_t}$ are the
-sum-to-zero varying effects, and $Z_s$ and $Z_t$ represent the Site
-and grid tile codes respectively. $o_y$ represents the initial
-observed Year within the MEOW Ecoregion and $i$ is a year iterator.
+where $\mathbf{Y}$ is a vector of the cover of the benthic group
+(e.g. either live hard coral, macroalgae, algae, etc),
+$\mathbf{\beta_y}$ and $\mathbf{X_y}$ represent the effects of Year
+and cell-means Year model matrices respectively, $\mathbf{\gamma_d}$,
+$\mathbf{\gamma_g}$, $\mathbf{\gamma_s}$ and $\mathbf{\gamma_r}$ are
+the sum-to-zero varying effects, and $Z_d$, $Z_g$, $Z_s$ and $Z_r$
+represent the Dataset_id, Grid_id, Site and Transect/Replicate codes
+respectively. $\mathbf{y}$ represents year hyperparameters and $y$ is a year
+iterator. $I_y$ and $O_y$ represent the initial observed year and mean
+observed response within the MEOW Ecoregion.  $F_{y}$ and $G_{y}$
+represent final observed year and gap years within the MEOW Ecoregion.
 
 Trends in hard coral cover to algae ratio (HCC:A) employed
 structurally very similar models to those described above, yet the
