@@ -118,25 +118,49 @@ fit_models <- function() {
     }
     ),
 
+    ## Order nested tibble according to most observations
+    tar_target(fit_models_reorder_, {
+      benthic_models <- fit_models_prepare_stan_data_
+      ## ---- fit models refactor
+      benthic_models <- benthic_models |>
+        mutate(n =
+                 map(.x = data,
+                     .f = ~ {
+                       .x |> nrow()
+                     }
+                 )) |>
+        unnest(n) |>
+        ungroup() |>
+        arrange(desc(n), region, subregion, ecoregion) |>
+        mutate(region = factor(region, levels = unique(region)),
+          subregion = factor(subregion, levels = unique(subregion)),
+          ecoregion = factor(ecoregion, levels =  unique(ecoregion)),
+          category = factor(category, levels = unique(category))
+        ) |>
+        group_by(region, subregion, ecoregion, category)
+      ## ----end
+      benthic_models
+    }
+    ),
     ## Fit the STAN model
     ## At this point, I would like to have a loop that can farm off
     ## to the HPC.
     ## For the moment, I will just do a single ecoregion (Eastern Caribbean)
 
     tar_target(fit_models_stan_, {
-      benthic_models <- fit_models_prepare_stan_data_
+      benthic_models <- fit_models_reorder_
       data_path <- fit_models_global_parameters_$data_path
       ## ---- fit models stan
       print(unique(benthic_models$region))
       ## model_stan <- cmdstanr::cmdstan_model(stan_file =  "model2.stan")
-      model_stan <- cmdstanr::cmdstan_model(stan_file =  "gcrmn_model.stan")
+      model_stan <- cmdstanr::cmdstan_model(stan_file =  "gcrmn_model_43.stan")
       ## benthic_models <- benthic_models |>
         ## filter(ecoregion == "Fiji Islands", category == "Hard coral") |>
         ## filter(ecoregion == "Eastern Caribbean", category == "Hard coral") |>
         ## filter(category %in% c("Hard coral", "Macroalgae"))
 
       options(future.globals.maxSize = 2 * 1024^3)
-      future::plan(future::multisession, workers = 15)
+      old_plan <- future::plan(future::multisession, workers = 15)
       results <- furrr::future_map2(.x = benthic_models$stan_data,
         .y = benthic_models$name,
         .f = ~ {
@@ -146,6 +170,7 @@ fit_models <- function() {
             cat(paste("\n", "Skipping", name, "as it already exists\n"))
             return(nm)
           }
+          cat(paste("\n", "Running", name, "\n"))
           mod_stan <-
             model_stan$sample(
               data =  .x,
@@ -166,6 +191,7 @@ fit_models <- function() {
         },
         .progress = TRUE
       )
+      future::plan(old_plan)
       benthic_models <- benthic_models |>
         ungroup() |>                                      ## need to ungroup for the following
         mutate(mod = results) |>
@@ -218,24 +244,73 @@ fit_models <- function() {
       data_path <- fit_models_global_parameters_$data_path
       output_path <- fit_models_global_parameters_$output_path
       all_years <- get_all_years_
+      print(paste0("The Number of available cores:", parallelly::availableCores()))
       ## ---- fit models stan posterior predictions
+
+      ## options(future.globals.maxSize = 2 * 1024^3)
+      ## old_plan <- future::plan(future::multisession, workers = 15)
+      ## posteriors <- furrr::future_map(
+      ##   .x = benthic_models$name,
+      ##   .f =  ~ {
+      ##     mod <- readRDS(paste0(data_path, "mod_", .x, ".rds"))
+      ##     vars <- get_variables(mod)
+      ##     posteriors <-
+      ##       mod$draws(variables = "Years") |>
+      ##       posterior::as_draws_df() |>
+      ##       mutate(across(starts_with("Years"), plogis))
+      ##     nm <- paste0(data_path, "posteriors_", .x, ".rds")
+      ##     saveRDS(posteriors,
+      ##       file = nm
+      ##     )
+      ##     nm
+      ##   },
+      ##   .progress = TRUE
+      ## )
+      ## future::plan(old_plan)
+      ## gc()
+      ## benthic_models <- benthic_models |>
+      ##   ungroup() |>                                      ## need to ungroup for the following
+      ##   mutate(posteriors = posteriors) |>
+      ##   group_by(region, subregion, ecoregion, category)  ## put the groups back
+      
+      ## benthic_models <- benthic_models |>
+      ##   mutate(posteriors = map2(.x = mod,
+      ##                           .y = name,
+      ##                           .f =  ~ {
+      ##                             mod <- readRDS(paste0(data_path, "mod_", .y, ".rds"))
+      ##                             vars <- get_variables(mod)
+      ##                             posteriors <-
+      ##                               mod$draws(variables = "Years") |>
+      ##                               posterior::as_draws_df() |>
+      ##                               mutate(across(starts_with("Years"), plogis))
+      ##                             nm <- paste0(data_path, "posteriors_", .y, ".rds")
+      ##                             saveRDS(posteriors,
+      ##                                     file = nm
+      ##                                     )
+      ##                             nm
+      ##                           }
+      ##                           ))
+
+      get_posteriors <- function(.x, .y) {
+        mod <- readRDS(paste0(data_path, "mod_", .y, ".rds"))
+        vars <- get_variables(mod)
+        posteriors <-
+          mod$draws(variables = "Years") |>
+          posterior::as_draws_df() |>
+          mutate(across(starts_with("Years"), plogis))
+        nm <- paste0(data_path, "posteriors_", .y, ".rds")
+        saveRDS(posteriors,
+          file = nm
+        )
+        nm
+      }
+
       benthic_models <- benthic_models |>
-        mutate(posteriors = map2(.x = mod,
-                                .y = name,
-                                .f =  ~ {
-                                  mod <- readRDS(paste0(data_path, "mod_", .y, ".rds"))
-                                  vars <- get_variables(mod)
-                                  posteriors <-
-                                    mod$draws(variables = "Years") |>
-                                    posterior::as_draws_df() |>
-                                    mutate(across(starts_with("Years"), plogis))
-                                  nm <- paste0(data_path, "posteriors_", .y, ".rds")
-                                  saveRDS(posteriors,
-                                          file = nm
-                                          )
-                                  nm
-                                }
-                                ))
+        ungroup() |> 
+        mutate(posteriors = list(parallel::mcmapply(FUN = get_posteriors,
+          mod, name, mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE))) |>
+        mutate(posteriors = posteriors[[1]]) |>
+        group_by(region, subregion, ecoregion, category)
       ## ----end
       benthic_models
     }
@@ -243,6 +318,7 @@ fit_models <- function() {
 
     ## ## Stan predictions summarised
     tar_target(fit_models_stan_predict_, {
+      print(paste0("Summarise the posteriors"))
       benthic_models <- fit_models_stan_posterior_predict_
       data_path <- fit_models_global_parameters_$data_path
       output_path <- fit_models_global_parameters_$output_path

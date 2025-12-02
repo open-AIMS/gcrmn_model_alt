@@ -61,6 +61,12 @@ run_R:
 	@echo "Running R targets pipeline..."
 	cd R && Rscript -e "targets::tar_make()"
 
+slurm_R:
+	@echo "Running R targets pipeline via slurm..."
+	rm -f analysis_*.log
+	rm -f analysis_*.stderr
+	sbatch analysis.slurm
+
 # %.html: %.qmd $(RUN_R_FLAG) $(PYTHON_SRC_DIR)/%.py
 %.html: %.qmd
 	@echo "Rendering $< to $@..."

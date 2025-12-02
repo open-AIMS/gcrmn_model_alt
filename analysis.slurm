@@ -2,7 +2,7 @@
 #SBATCH --job-name=gcrmn
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=45
+#SBATCH --cpus-per-task=55
 #SBATCH --partition=mlogan
 #SBATCH --mem=600GB
 #SBATCH --output=analysis_%j.log

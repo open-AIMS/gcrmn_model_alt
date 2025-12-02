@@ -12,6 +12,13 @@ helper_functions <- function() {
 
           X <- model.matrix(~ 1, data =  data)
         }
+        ## DatasetID model matrix
+        if (length(unique(data$datasetID)) > 1) {
+          contrasts(data$datasetID) <- contr.sum
+          Z <- model.matrix(~datasetID, data = data)
+        } else {
+          Z <- model.matrix(~ 1, data =  data)
+        }
         ## all_years <- 1978:2020
         if (is.null(yrs)) {
 
@@ -52,17 +59,32 @@ helper_functions <- function() {
           pull(all_years)
 
         ## Get weights
-        grid_wts <- data |>
+        grid_wts1 <- data |>
           group_by(grid_id) |>
           ## summarise(area =  unique(sum)) |>
           summarise(area =  as.numeric(unique(Area))) |>
           ungroup() |>
           mutate(wt =  area / sum(area))
+
+        wts <- data |>
+          dplyr::select(-area) |> 
+          ## mutate(grid_id = as.numeric(as.character(grid_id))) |>
+          group_by(grid_id) |> 
+          mutate(N = n()) |>
+          ungroup() |>
+          left_join(grid_wts1, by = "grid_id") |>
+          mutate(wt = wt/N) |>
+          dplyr::select(grid_id, wt, N) |>
+          mutate(grid_id2 = as.numeric(factor(grid_id))) |>
+          distinct() |>
+          mutate(wt = ifelse(is.na(wt), 0, wt))
+
         stan_data <- list(
           N =  N,
           Y =  data$Cover,
           K =  ncol(X),
           X =  X,
+          Z =  Z,
           P =  ncol(Xmat),
           Xmat =  Xmat,
           Z_0_1 =  rep(0, N),
@@ -78,7 +100,8 @@ helper_functions <- function() {
           N_1 =  length(unique(factor(data$grid_id))),
           M_1 =  1,
           NC_1 =   0,
-          wt_1 =  grid_wts$wt,
+          ## wt_1 =  grid_wts$wt,
+          wt_1 =  wts$wt,
           N_2 =  length(unique(factor(data$cSite))),
           M_2 =  1,
           NC_2 =   0,
