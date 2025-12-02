@@ -1,6 +1,8 @@
 data/cellmeans*
 data/mod*
 data/posteriors*
+data/*.csv
+data/*.rds
 *.log
 *.sif
 *.html
@@ -8,3 +10,6 @@ data/posteriors*
 *#
 *~
 R/_targets/
+R/*.png
+R/*.rds
+R/*.stan

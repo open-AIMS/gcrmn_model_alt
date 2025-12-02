@@ -771,47 +771,123 @@ effects.
 
 The statistical models can be summarised as:
 
+<!--
 \begin{align}
   \mathbf{Y} &\sim Beta(\mu\phi, (1-\mu)\phi)\\
-  logit(\mu) &= \mathbf{\beta_y} \mathbf{X_y} + \mathbf{\gamma_d} Z_d + \omega\mathbf{\gamma_t} Z_t +
+  logit(\mu) &= \mathbf{\beta_y} \mathbf{X_y} + \mathbf{\gamma_d} \mathbf{X_d} + \omega\mathbf{\gamma_t} Z_t +
     \mathbf{\gamma_s} Z_s + \mathbf{\gamma_r} Z_r\\
-  \mathbf{\gamma_d} &= \sigma_d\times z_d\\
   \mathbf{\gamma_t} &= \sigma_t\times z_t\\
   \mathbf{\gamma_s} &= \sigma_s\times z_s\\
   \mathbf{\gamma_r} &= \sigma_r\times z_r\\
   \phi &\sim \Gamma(0.01,0.01)\\
-  z_d,z_t,z_s,z_r &\sim N(0,1)\\
-  \sigma_d,\sigma_t,\sigma_s,\sigma_r &\sim t(3, 0, 1)\\
+  z_t,z_s,z_r &\sim N(0,1)\\
+  \sigma_t,\sigma_s,\sigma_r &\sim t(3, 0, 1)\\
   \sigma_y &\sim t(3, 0, 0.5)\\ 
-  \beta_{y} &\sim N(\mathbf{y}, \sigma_y)\\ 
+  \mathbf{\beta_{y}} &\sim N(\mathbf{y}, \sigma_y)\\ 
   \mathbf{y} &\begin{cases}y=I_y, \sim N(O_y, \sigma_y)\\
      y>I_y, \sim N(\mathbf{y}_{y-1}, 0.1)\\
      y=G_y, \sim N((\mathbf{y}_{y-1} + \mathbf{y}_{y+1})/2, 0.1)\\
      y<F_y, \sim N(\mathbf{y}_{y+1}, 0.1)
-  \end{cases}
+  \end{cases}\\
+  \mathbf{\gamma_d} = \mathbf{gamma_raw_d} - \bar{\mathbf{gamma_d}}\\
+  \mathbf{\gamma_raw_d} & \sim N(0, 0.3)\\
 \end{align}
 
 where $\mathbf{Y}$ is a vector of the cover of the benthic group
 (e.g. either live hard coral, macroalgae, algae, etc),
 $\mathbf{\beta_y}$ and $\mathbf{X_y}$ represent the effects of Year
-and cell-means Year model matrices respectively, $\mathbf{\gamma_d}$,
+and cell-means (no intercept) Year model matrices respectively.
+$\mathbf{\gamma_d}$ and $\mathbf{X_d}$ represent the effects of
+Dataset ID and the associated model matrix.  $\mathbf{\gamma_d}$ is
+mean centered to ensure it sums-to-zero so that the $\beta$ parameters
+apply to the average Dataset (rather than the first level).
 $\mathbf{\gamma_g}$, $\mathbf{\gamma_s}$ and $\mathbf{\gamma_r}$ are
-the sum-to-zero varying effects, and $Z_d$, $Z_g$, $Z_s$ and $Z_r$
-represent the Dataset_id, Grid_id, Site and Transect/Replicate codes
-respectively. $\mathbf{y}$ represents year hyperparameters and $y$ is a year
-iterator. $I_y$ and $O_y$ represent the initial observed year and mean
-observed response within the MEOW Ecoregion.  $F_{y}$ and $G_{y}$
-represent final observed year and gap years within the MEOW Ecoregion.
+the sum-to-zero varying effects, and $Z_g$, $Z_s$ and $Z_r$ represent
+the Grid_id, Site and Transect/Replicate codes
+respectively. $\mathbf{y}$ represents year hyperparameters and $y$ is
+a year iterator. $I_y$ and $O_y$ represent the initial observed year
+and mean observed response within the MEOW Ecoregion.  $F_{y}$ and
+$G_{y}$ represent final observed year and gap years within the MEOW
+Ecoregion.  Weakly informative priors (on the link scale) are applied
+to the $\sigma$ hyperpriors as well as $\Gamma$.  Since \mathbf{Y} are
+hyperpriors on the expected $\beta$ and are based on lags from
+surrounding estimates, the priors had narrower spread so as to offer
+some regularisation in the expected change in cover over a single
+year.  Simularly, the prior on the sum-to-zero effect of Dataset ID
+was more informative since there were numerous incidences in which
+different Datasets did not overlap in space and/or time.  Hence
+without less weak priors, there was a strong possibility of the models
+doubling up on trying to account for differences in Datasets, space
+and time resulting in highly inflated uncertainties.
 
-Trends in hard coral cover to algae ratio (HCC:A) employed
-structurally very similar models to those described above, yet the
-ratio was modelled against a Gaussian distribution.
+-->
+
+\begin{align}
+  \mathbf{Y} &\sim Beta(\mu\phi, (1-\mu)\phi)\\
+  logit(\mu) &= \mathbf{\beta_y} \mathbf{X_y} + \mathbf{\gamma_d} \mathbf{X_d} + \omega\mathbf{\gamma_t} Z_t +
+    \mathbf{\gamma_s} Z_s + \mathbf{\gamma_r} Z_r\\
+  \mathbf{\gamma_t} &= \sigma_t\times z_t\\
+  \mathbf{\gamma_s} &= \sigma_s\times z_s\\
+  \mathbf{\gamma_r} &= \sigma_r\times z_r\\
+  \phi &\sim \Gamma(0.01,0.01)\\
+  z_t,z_s,z_r &\sim N(0,1)\\
+  \sigma_t,\sigma_s,\sigma_r &\sim t(3, 0, 1)\\
+  \sigma_y &\sim t(3, 0, 0.5)\\ 
+  \mathbf{\beta_{y}} &\sim N(\mathbf{y}, \sigma_y)\\ 
+  \mathbf{y} &\begin{cases}y=I_y, \sim N(O_y, \sigma_y)\\
+     y>I_y, \sim N(\mathbf{y}_{y-1}, 0.1)\\
+     y=G_y, \sim N((\mathbf{y}_{y-1} + \mathbf{y}_{y+1})/2, 0.1)\\
+     y<F_y, \sim N(\mathbf{y}_{y+1}, 0.1)
+  \end{cases}\\
+  \mathbf{\gamma_d} & \sim N(0, 0.3)\\
+\end{align}
+
+where $\mathbf{Y}$ is a vector of the cover of the benthic group
+(e.g. either live hard coral, macroalgae, algae, etc),
+$\mathbf{\beta_y}$ and $\mathbf{X_y}$ represent the effects of Year
+and cell-means (no intercept) Year model matrices respectively.
+$\mathbf{\gamma_d}$ and $\mathbf{X_d}$ represent the effects of
+Dataset ID and the associated sum-to-zero model matrix such that the
+$\beta$ parameters apply to the average Dataset (rather than the first
+level).  $\mathbf{\gamma_g}$, $\mathbf{\gamma_s}$ and
+$\mathbf{\gamma_r}$ are the sum-to-zero varying effects, and $Z_g$,
+$Z_s$ and $Z_r$ represent the Grid_id, Site and Transect/Replicate
+codes respectively. $\mathbf{y}$ represents year hyperparameters and
+$y$ is a year iterator. $I_y$ and $O_y$ represent the initial observed
+year and mean observed response within the MEOW Ecoregion.  $F_{y}$
+and $G_{y}$ represent final observed year and gap years within the
+MEOW Ecoregion.  Weakly informative priors (on the link scale) were
+applied to the $\sigma$ hyperpriors as well as $\Gamma$.  Since
+$\mathbf{Y}$ are hyperpriors on the expected $\beta$ and are based on
+lags from surrounding estimates, the priors had narrower spread so as
+to offer some regularisation in the expected change in cover over a
+single year.  Simularly, the prior on the sum-to-zero effect of
+Dataset ID was more informative since there were numerous incidences
+in which different Datasets did not overlap in space and/or time.
+Hence without less weak priors, there was a strong possibility of the
+models doubling up on trying to account for differences in Datasets,
+space and time resulting in highly inflated uncertainties.
+
+Estimates of annual benthic cover thereafter comprised of inverse-link
+transformed $\beta$ estimates for the years for which there were
+observed data and $\mathbf{Y}$ estimates were used to fill in the gaps
+(years for which there were no observed data).  This methodology
+enabled us to generate cover estimates that were unsmoothed for data
+years (thereby permitting rapid change) whilst still providing
+estimates of cover during the temporal gaps that transitioned between
+the bookends of the gaps and with uncertainty increasing distal to the
+bookends.
+
+<!-- Trends in hard coral cover to algae ratio (HCC:A)
+employed structurally very similar models to those described above,
+yet the ratio was modelled against a Gaussian distribution.  -->
 
 All models were run with 10000 no-u-turn MCMC iterations, a warmup of
 5000 and a thinning rate of 5 for each of three chains (each with
-random initial values). Diagnostics indicated that all chains
-converged on stable, well mixed posteriors (Rhat values < 1.05) and
-low MCMC sample auto-correlation (< 0.2).
+random initial values). The adaptive delta was elevated to 0.99 to
+reduce the incidences of post-warmup divergences.  Diagnostics
+indicated that all chains converged on stable, well mixed posteriors
+(Rhat values < 1.05) and low MCMC sample auto-correlation (< 0.2).
 
 #### Hierarchical aggregation
 
@@ -828,11 +904,25 @@ weights) up to GCRMN Region and then Global level
 
 ### (Bootstrapped) xgboost (boosted regression tree) model
 
+<!--
 Jeremy Wicquart has developed an xbgoost model that incorporates a
 suite of environmental covariates in addition to space and time.  The
 outputs of these models (at each of ecoregion, subregion and region)
 were provided in a single spreadsheet and are presented along side the
 Bayesian Hierarchical models in the sections below.
+-->
+
+Over the past three decades, numerous studies have assessed temporal
+trends in the percentage cover of hard corals and other benthic
+categories at broad spatial scales. Most of these studies aggregated
+data from multiple monitoring programs and interpreted trends by
+plotting mean annual hard coral cover together with associated
+confidence intervals (e.g. Gardner et al., 2003; Obura et al.,
+2017). Other studies applied statistical models to investigate the
+factors driving temporal variation in percentage cover (Bruno and
+Selig, 2007; De’ath et al., 2012; Jackson et al., 2014; Tebbett et
+al., 2023b).
+
 
 ## Modelled trends
 
