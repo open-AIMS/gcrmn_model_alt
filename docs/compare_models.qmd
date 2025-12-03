@@ -128,271 +128,368 @@ The candidate models are:
   by Jeremy Wicquart (codes for these models are not presented in this
   document)
 
-## Preparations
-
-### Spatial layers
-
-::: {.panel-tabset}
-
-#### R
-
-```{r}
-#| label: cwd
-#| eval: false
-#| echo: false
-#| warning: false
-#| message: false
-#| cache: false
-getwd()
-```
-
-Load the necessary R libraries
-
-```{r}
-#| label: spatial libraries
-#| output: false
-#| eval: true
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-Establish the global environment and paths
-
-```{r}
-#| label: spatial global parameters
-#| results: hide
-#| eval: true
-#| echo: true
-#| cache: false
-```
-
-:::
-
-
-:::: {.panel-tabset}
-
-#### World map layers
-
-::: {.panel-tabset}
-
-##### R
-
-```{r}
-#| label: ne countries
-#| eval: false
-#| echo: true
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-:::
-
-#### Reef grid
-
-::: {.panel-tabset}
-
-##### R
-
-```{r}
-#| label: reef grid
-#| eval: false
-#| echo: true
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-:::
-
-#### Ecoregions (MEOWs)
-
-::: {.panel-tabset}
-
-##### R
-
-```{r}
-#| label: ecoregions
-#| eval: false
-#| echo: true
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-:::
-
-#### Ecoregion lookup
-
-::: {.panel-tabset}
-
-##### R
-
-```{r}
-#| label: ecoregion lookup
-#| eval: false
-#| echo: true
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-:::
-
-
-::::
-
-
-#### Process spatial data
-
-:::: {.panel-tabset}
-
-##### Reef grid
-
-::: {.panel-tabset}
-
-###### R
-
-```{r}
-#| label: process grid reef
-#| eval: false
-#| echo: true
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-:::
-
-##### Join MEOWs and lookup
-
-::: {.panel-tabset}
-
-###### R
-
-```{r}
-#| label: join meow and ecoregion_lookup
-#| eval: false
-#| echo: true
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-:::
-
-##### Process spatial weights
-
-::: {.panel-tabset}
-
-###### R
-
-```{r}
-#| label: process patial weights
-#| eval: false
-#| echo: true
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-:::
-
-
-::::
-
-
-
-### Benthic data
-
-::: {.panel-tabset}
-
-#### R
-
-Load the necessary R libraries
-
-```{r}
-#| label: spatial libraries
-#| output: false
-#| eval: true
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-Establish the global environment and paths
-
-```{r}
-#| label: processing global parameters
-#| results: hide
-#| eval: true
-#| echo: true
-#| cache: false
-```
-
-:::
-
-#### Import benthic data
-
-Benthic data
-
-```{r}
-#| label: read benthic data
-#| output: false
-#| eval: false
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-Benthic prediction data
-
-```{r}
-#| label: read benthic prediction data
-#| output: false
-#| eval: false
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-#### Process benthic data
-
-1. Process benthic data (Part 1. add ecoregions)
-
-```{r}
-#| label: process benthic data Part 1. add ecoregions
-#| output: false
-#| eval: false
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-2. Process benthic data (Part 2. add grid data)
-
-```{r}
-#| label: process benthic data Part 2. add grid data
-#| output: false
-#| eval: false
-#| warning: false
-#| message: false
-#| cache: false
-```
-
-3. Process benthic data (Part 3. add factors)
-
-```{r}
-#| label: process benthic data Part 3. add factors
-#| output: false
-#| eval: false
-#| warning: false
-#| message: false
-#| cache: false
-```
-
 ## Methods
+
+### Data sources
+
+#### Regions and subregions
+
+The GCRMN regions and subregions polygons were obtained by combining
+the polygons of the Marine Ecoregions Of the World
+[@Spalding-2007]. The code used to obtain these polygons is publicly
+available at <https://github.com/GCRMN/gcrmn_regions>.
+
+#### Coral reef distribution {#sec-coral-reef-distribution}
+
+The Tropical Coral Reefs of the World dataset
+[CoralReefsOfTheWorld-2011] developed by the World Resources Institute
+(WRI) was used as the coral reef distribution. This dataset consists
+of a shapefile of coral reef locations at a 500 m resolution. We
+modify the dataset by adding coral reefs in Norfolk Island and by
+updating coral reef distribution for the Eastern Tropical Pacific,
+where multiple inconsistencies were mentioned by coral reefs experts
+in the region.
+
+### Benthic cover indicators
+
+Although numerous ecological variables are measured and monitored
+across the world’s coral reefs [@Flower-2017], benthic cover is
+arguably the most widely assessed, both spatially and temporally. This
+is largely because most benthic cover monitoring methods are
+relatively simple, cost-effective, and require limited taxonomic
+expertise [@Aronson-1994; @Hill-2004]. Measurements of benthic cover
+began prior to 1980 [@Connell-1997; @Dustan-1987], and advances in
+survey techniques have had minimal effects on comparability with
+historical data. For instance, different approaches such as
+point-intercept transects and photo-quadrats generally yield
+consistent estimates of benthic cover [@Jokiel-2015].
+
+The comparability of methods enables the integration of datasets from
+multiple monitoring programs, allowing temporal trends in benthic
+cover to be estimated at large spatial scales. This approach, known as
+full data analysis, provides greater precision than other forms of
+synthesis such as meta-analyses or systematic reviews
+[@Spake-2021]. Unlike meta-analysis, which typically produces a single
+effect size, full data analysis facilitates the estimation of complex
+temporal dynamics. Furthermore, because it relies directly on raw
+data, it incorporates a larger quantity of information than
+meta-analyses or systematic reviews, which are constrained to
+published results.
+
+Among the wide range of benthic categories used by monitoring
+programs, we chose to report five major benthic categories (hard
+coral, macroalgae, turf algae, coralline algae, and other
+fauna). Unlike the “Status of Coral Reefs of the World: 2020” GCRMN
+report [@Souter-2021], we separated algae into three functional
+groups - macroalgae, turf algae, and coralline algae (see section
+Taxonomic re-categorization, for definitions). This decision was made
+to better capture the ecological complexity of coral reefs and to
+reflect the distinct functional roles of different algal groups
+(Tebbett et al., 2023a).
+
+#### Data integration {#sec-data-integration}
+
+A full data analysis of benthic cover in coral reefs is only feasible
+when a homogeneous dataset is available. As no such dataset existed at
+the global scale, we first conducted a data integration step prior to
+analysis. The objective was to construct a consistent synthetic
+dataset of coral reef benthic cover by aggregating multiple
+heterogeneous individual datasets. This data integration relied on an
+improved version of the workflow developed by @Wicquart-2022
+for the “Status of Coral Reefs of the World: 2020” GCRMN report
+[@Souter-2021]. Key improvements to the workflow included the
+addition of quality checks, which provide stronger guarantees of data
+reliability. The data integration workflow applied in this report
+consists of five main steps, summarized in @fig-3.3 and described in
+detail in the following sections.
+
+::: {.figure #fig-3.3}
+
+![](resources/fig-3.3.jpg){width=500px}
+
+Schematic representation of the five main steps of the data
+integration workflow used to construct the synthetic dataset on coral
+reef benthic cover. MEOW = Marine Ecoregions of the World
+[@Spalding-2007].
+
+:::
+
+#### Data collation
+
+We recontacted data contributors who had participated in the “Status
+of Coral Reefs of the World: 2020” GCRMN report [@Souter-2021] to
+obtain authorization for data reuse and to update the datasets they
+had previously shared. In parallel, we issued an open call for data
+contributions in July 2024. Finally, data collation was complemented
+by searching for datasets available in scientific articles, data
+papers, and coral reef data platforms (e.g., MERMAID), and by inviting
+dataset owners to contribute.
+
+The datasets compiled during the data collation step were
+heterogeneous in terms of format (e.g., CSV, Excel), structure,
+variable names, and measurement units (e.g., meters vs. feet for
+depth). To enable integration into a single homogeneous synthetic
+dataset, a data standardization step was required. For each dataset,
+we developed an R script to apply dataset-specific modifications
+according to a predefined structure and set of variables
+(@tbl-1). These modifications included merging Excel spreadsheets,
+linking primary datasets with associated metadata (e.g., site
+coordinates, benthic codes), selecting and renaming variables,
+converting units, harmonizing Coordinates Reference Systems (CRS) and
+date formats, and deriving benthic cover values from raw observations
+such as point-intercept transects or photo-quadrats (@fig-3.3, Step
+1).
+
+
+
+| Nb | Variable         | Type      | Description                                          |
+|----|------------------|-----------|------------------------------------------------------|
+| 1  | datasetID        | Factor    | ID of the dataset                                    |
+| 2  | region           | Factor    | GCRMN region                                         |
+| 3  | subregion        | Factor    | GCRMN subregion                                      |
+| 4  | ecoregion        | Factor    | Marine Ecoregion of the World (Spalding et al, 2007) |
+| 5  | country          | Factor    | Country                                              |
+| 6  | territory        | Character | Territory                                            |
+| 7  | locality         | Character | Site name                                            |
+| 8  | habitat          | Factor    | Habitat                                              |
+| 9  | parentEventID    | Integer   | Transect ID                                          |
+| 10 | eventID          | Integer   | Quadrat ID                                           |
+| 11 | decimalLatitude  | Numeric   | Latitude (decimal, EPSG:4326)                        |
+| 12 | decimalLongitude | Numeric   | Longitude (decimal, EPSG:4326)                       |
+| 13 | verbatimDepth    | Numeric   | Depth (m)                                            |
+| 14 | year             | Integer   | Four-digit year                                      |
+| 15 | month            | Integer   | Integer month                                        |
+| 16 | day              | Integer   | Integer day                                          |
+| 17 | eventDate        | Date      | Date (YYYY-MM-DD, ISO 8601)                          |
+| 18 | samplingProtocol | Character | Method used to acquire the measurement               |
+| 19 | recordedBy       | Character | Person who acquired the measurement                  |
+| 20 | category         | Factor    | Benthic category                                     |
+| 21 | subcategory      | Factor    | Benthic subcategory                                  |
+| 22 | condition        | Character | Condition for hard corals                            |
+| 23 | phylum           | Character | Phylum                                               |
+| 24 | class            | Character | Class                                                |
+| 25 | order            | Character | Order                                                |
+| 26 | family           | Character | Family                                               |
+| 27 | genus            | Character | Genus                                                |
+| 28 | scientificName   | Character | Species                                              |
+| 29 | measurementValue | Numeric   | Percentage cover                                     |
+
+: Description of variables included in the gcrmndb_benthos synthetic
+dataset. Variable names (except region, subregion, ecoregion,
+category, subcategory, and condition) follow [DarwinCore
+terms](http://dwc.tdwg..org/terms/). Variables 2-13 correspond to
+spatial dimensions, variables 14-17 to temporal dimensions, and
+variables 20-28 to taxonomic information {#tbl-1}
+
+
+
+All data standardization was performed using R scripts, ensuring
+transparency of modifications and allowing for subsequent corrections
+if errors are identified. Because all R scripts are publicly
+available, dataset owners can also verify the changes applied to their
+data (see <https://github.com/GCRMN/gcrmndb_benthos>).
+
+Following standardization, each dataset was exported in CSV format,
+and all CSV files were then merged into a single raw synthetic dataset
+(@fig-3.3, Step 2).
+
+#### Taxanomic re-categorization
+
+During the data standardization step, the raw benthic categories -
+those originally defined by the data providers in each dataset - were
+stored in the temporary variable organismID. We then used the taxize R
+package to automatically retrieve taxonomic information for variables
+23 to 28, from the World Register of Marine Species (WoRMS)
+database. Subsequently, a CSV file containing all unique raw benthic
+categories was exported. Each automatically completed entry was
+verified, and any missing taxonomic information was manually added for
+variables 20 to 28 (@fig-3.3, Step 3).
+
+When a raw benthic category represented a broad, non-taxonomic
+grouping, we completed the variables category and, where possible,
+subcategory accordingly. For example, the raw category “turf” was
+assigned to category = “Algae” and subcategory = “Turf algae.”
+
+Several specific cases required particular attention during taxonomic
+reclassification:
+
+- **Mixed categories**: In this case, we assigned the lowest common
+     denominator of the mixed categories. For example, when the raw
+     benthic category was “Macroalgae and turf algae,” we classified
+     it as “Algae”.
+
+- **Stacked categories**: In this case, we retained the category that
+     was above the other. For instance, when the raw benthic category
+     was “Algae on dead coral,” we assigned the category to “Algae.”
+
+- **Homonym taxa names**: In this case, we either contacted the data
+       provider to replace the ambiguous raw category with a precise
+       one during the data standardization step, or we left the
+       variable category blank, which subsequently led to the removal
+       of the corresponding rows. For example, “Turbinaria” refers
+       both to a genus of Scleractinia (corals) and to a genus of
+       Fucales (macroalgae). If the data provider was able to clarify
+       the intended meaning, the raw category was replaced with a
+       specific denomination (e.g., “Turbinaria – Coral”) during the
+       standardization step.
+
+- **Unrequired or unintelligible categories**: In this case, we did
+     not complete the variable category, which also led to the removal
+     of the corresponding rows. Examples include raw benthic
+     categories such as “Shadow,” “Other,” or “Unknown.”
+
+When the raw benthic category referred to a taxon (e.g., “Acropora”)
+rather than a broad grouping (e.g., “Hard coral”), we completed
+variables 23 to 28. To do so, we first verified the spelling of each
+raw benthic category using WoRMS and considered updates in taxonomic
+classification that may have occurred between the time of data entry
+by the providers and the integration process. Within the CSV file, we
+then filled in the taxonomic rank corresponding to the raw benthic
+category, as well as all higher taxonomic levels (variables 23 to 28
+in @tbl-1). For example, for the raw benthic category “coral
+acropora,” we entered “Acropora” for the variable genus, “Acroporidae”
+for family, and continued this process up to the variable phylum. When
+the raw benthic category was taxonomic, the variables category and
+subcategory were left empty. These variables were later completed in R
+by applying attribution rules derived from the taxonomic variables (23
+to 28 in @tbl-1). The rules were as follows:
+
+- **Hard coral**: We assigned category = “Hard coral” when the
+     variable order was “Scleractinia” or when the variable family was
+     “Milleporidae” or “Helioporidae.” When contributors used the term
+     “hard coral” without providing taxonomic information, we also
+     assigned category = “Hard coral.” Note that the “Hard coral”
+     category excluded dead corals but may have included partially or
+     fully bleached corals.
+
+- **Macroalgae**: We assigned category = “Algae” and subcategory =
+     “Macroalgae” when the variable class was “Phaeophyceae,”
+     “Florideophyceae,” or “Ulvophyceae” and the variable order was
+     not “Corallinales.” When contributors used the term “macroalgae”
+     without providing taxonomic information, we applied the same
+     classification (category = “Algae” and subcategory =
+     “Macroalgae”).
+
+- **Coralline algae**: We assigned category = “Algae” and subcategory
+     = “Coralline algae” when the variable order was “Corallinales.”
+     When contributors used the term “coralline algae” without
+     taxonomic detail, we again classified it as category = “Algae”
+     and subcategory = “Coralline algae”.
+
+- **Turf algae**: When contributors used the term “turf algae,” we
+     assigned category = “Algae” and subcategory = “Turf algae”.
+
+- **Cyanobacteria**: We assigned category = “Algae” and subcategory =
+     “Cyanobacteria” when the variable phylum was “Cyanobacteria”.
+
+- **Other fauna**: We assigned category = “Other fauna” when the
+     variable phylum was “Porifera,” “Chordata,” “Echinodermata,”
+     “Bryozoa,” “Annelida,” “Mollusca,” or “Arthropoda”; when the
+     variable order was “Actiniaria,” “Alcyonacea,” “Zoantharia,”
+     “Corallimorpharia,” or “Antipatharia”; or when the variable
+     subclass was “Octocorallia”.
+
+- **Seagrass**: We assigned category = “Seagrass” when the variable
+     phylum was “Tracheophyta”.
+
+Once the recategorization was completed, we merged the table
+containing the organismID variable and the newly created variables (20
+to 28 in @tbl-1) with the main data table. We then removed the
+temporary variable organismID and deleted all rows with missing values
+in the variable category. Removing missing values in category did not
+affect percentage cover values, although it reduced the total
+percentage cover for a sampling unit (e.g., quadrat, transect) to
+below 100%. Finally, we aggregated the variable measurementValue by
+grouping across all other variables, thereby preventing duplicate
+benthic categories within a given sampling unit.
+
+The full recategorization of raw benthic categories into standardized
+categories (variables 20 to 28, @tbl-1) is publicly available in
+the file “03_tax-recategorisation.csv” on the [gcrmndb_benthos GitHub
+repository](https://github.com/GCRMN/gcrmndb_benthos).
+
+#### Spatial attribution
+
+Using site coordinates (from the variables decimalLatitude and
+decimalLongitude), we added five spatially related variables to the
+dataset (@fig-3.3, Step 4). First, we performed a spatial intersection
+to assign the GCRMN “region” and “subregion” variables to each site,
+using the GCRMN regions shapefile (GCRMN-2024polygons). We then added
+the variable ecoregion by intersecting sites with the Marine
+Ecoregions of the World dataset [@Spalding-2007]. Finally, we included
+the variables country and territory by referencing the fields
+SOVEREIGN1 and TERRITORY1 from the World EEZ v12 dataset
+[@Flanders-2023]. Because of the limited spatial resolution of the
+World EEZ v12 dataset, some sites located near coastlines fell
+slightly outside the EEZ polygons. To minimize missing values for
+country and territory, we applied a two-step procedure: we first
+intersected sites with the World EEZ v12 dataset, then reprocessed
+sites with missing values by performing a second intersection with EEZ
+polygons buffered by 1 km.
+
+#### Quality checks {#sec-quality-checks}
+
+Pooling large volumes of data without adequate verification risks
+compromising data quality. Previous studies have shown that
+insufficient quality control in large synthetic datasets can lead to
+biased interpretations of ecological questions [@Augustine-2024]. To
+address this issue, we implemented a dedicated step for data quality
+assessment (@fig-3.3, Step 5). We established a set of nine quality
+checks, adapted from @Vandepitte-2015 (@tbl-2). Each
+quality check was formulated as a question linked to one or more
+variables, making them readily translatable into code.
+
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+| Nb | Variable       | Question                                                                                                              |
++====+================+=======================================================================================================================+
+|1	 |decimalLatitude |Are the latitude and longitude available?                                                                              |
+|    |decimalLongitude|                                                                                                                       |	
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+|2	 |decimalLatitude |Is the latitude within its possible boundaries (i.e. between -90 and 90)?                                              |
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+|3   |decimalLongitude|Is the longitude within its possible boundaries (i.e. between -180 and 180)?                                           |
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+|4   |decimalLatitude |Is the site within the coral reef distribution area (100 km buffer)?                                                   |
+|    |decimalLongitude|	                                                                                                                      |
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+|5   |decimalLatitude |Is the site located within a GCRMN region?                                                                             |
+|    |decimalLongitude|       	                                                                                                              |
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+|6   |decimalLatitude |Is the site located within an EEZ (1 km buffer)?                                                                       |
+|    |decimalLongitude|                                                                                                                       |
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+|7   |year            |Is the year available?                                                                                                 |
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+|8   |measurementValue|Is the sum of the percentage cover of benthic categories within the sampling unit greater than 0 and lower than 100?   |
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+|9   |measurementValue|Is the percentage cover of a given benthic category (i.e. a row) greater than 0 and lower than 100?                    |
++----+----------------+-----------------------------------------------------------------------------------------------------------------------+
+
+: List of quality checks used for the gcrmndb_benthos synthetic dataset. {#tbl-2}
+
+Because of rounding decimal places, the sum of percentage cover values
+for benthic categories within a sampling unit can slightly exceed 100%
+[@Razak-2024]. To avoid unnecessary data loss, we normalized
+rows where the total percentage cover was between 100 and 101 to a
+maximum of 100. This adjustment was applied prior to implementing
+quality check 8 (@tbl-2).
+
+We evaluated each quality check as either “True” or “False,” and
+removed all rows that failed at least one check. However, correcting
+errors is preferable to deleting data, in order to preserve sufficient
+data for analysis. To support error correction, we generated summary
+reports for each dataset integrated into the synthetic dataset. These
+reports detailed the percentage of rows removed per quality check,
+allowing us to identify and correct errors by updating the data
+standardization code (@fig-3.3, Step 1). For example, a common and
+easily corrected error was the inversion of decimalLatitude and
+decimalLongitude.
+
+In addition, the individual dataset reports provided descriptive
+information such as the proportion of missing values per variable, the
+percentage of rows by benthic category and taxonomic level, and the
+spatial and temporal distribution of observations.
+
 
 ### Bayesian hierarchical model
 
@@ -901,6 +998,12 @@ the un-standardised GCRMN Sub-region posteriors were aggregated (with
 weights) up to GCRMN Region and then Global level
 (see [@fig-schematichierarchy]b & [@fig-schematic]).
 
+#### Code availability
+
+All scripts used to pre-process and analyse the data via the Bayesian
+Hierarachical models as well as perform aggregations and derived
+tables/figures in this report are available at
+<https://github.com/open-AIMS/gcrmn_model_alt>.
 
 ### (Bootstrapped) xgboost (boosted regression tree) model
 
@@ -917,11 +1020,1024 @@ trends in the percentage cover of hard corals and other benthic
 categories at broad spatial scales. Most of these studies aggregated
 data from multiple monitoring programs and interpreted trends by
 plotting mean annual hard coral cover together with associated
-confidence intervals (e.g. Gardner et al., 2003; Obura et al.,
-2017). Other studies applied statistical models to investigate the
-factors driving temporal variation in percentage cover (Bruno and
-Selig, 2007; De’ath et al., 2012; Jackson et al., 2014; Tebbett et
-al., 2023b).
+confidence intervals [e.g. @Gardner-2003; @Obura-2017]. Other studies
+applied statistical models to investigate the factors driving temporal
+variation in percentage cover [@Bruno-2007; @Death-2012;
+@Jackson-2014; @Tebbett-2023b].
+
+The main assumption underlying these approaches is that the aggregated
+data are representative of the coral reefs within the region of
+interest. However, coral reef monitoring is highly heterogeneous in
+both space and time [@Souter-2021]. Some reefs, often located
+near research facilities, have been intensively monitored, whereas
+others, particularly those in remote areas, remain largely
+unmonitored. As a result, calculating mean annual cover at the global
+scale risks producing benthic cover trends that are not representative
+of the world’s coral reefs as a whole, but instead reflect changes
+occurring at monitoring sites.
+
+One way to address this bias is to use predictors to estimate benthic
+cover temporal trends in areas with limited or no observed
+data. Predictors - also referred to as covariates or explanatory
+variables - are variables (e.g., sea surface temperature) that can be
+incorporated into statistical models to estimate a response variable
+(e.g., hard coral cover). By modeling the relationship between benthic
+cover measured at monitoring sites and the corresponding predictor
+values, it becomes possible to predict benthic cover at unmonitored
+coral reef sites based on their predictor values. Achieving accurate
+predictions requires using a large number of predictors, each of which
+must contain different information.
+
+For many years, the use of predictors in statistical models for
+macro-ecological studies was constrained by their limited availability
+at large spatial scales and by coarse spatio-temporal resolution. In
+recent years, however, numerous data products - often derived from
+satellite observations - have become publicly accessible
+[@Gorelick-2017]. Combined with advances in computational power and
+Machine Learning (ML) algorithms [@Rubbens-2023], this has enabled the
+integration of multiple predictors to estimate benthic
+cover. Accordingly, ML-based modeling approaches are increasingly
+being applied in coral reef studies [e.g. @Bakker-2023;
+@McClanahan-2024].
+
+
+In this study, we applied a ML approach to estimate temporal trends in
+the percentage cover of five major benthic categories (hard coral,
+macroalgae, turf algae, coralline algae, and other fauna) on world’s
+coral reefs from 1980 to 2024. The six main steps of the ML workflow
+are summarized in @fig-3.4 and described in detail in the following
+sections. These sections follow the REFORMS checklist [@Kapoor-2024],
+which provides guidance for reporting ML-based research.
+
+::: {.figure #fig-3.4}
+
+![](resources/fig-3.4.png){width=500px}
+
+Main steps of the machine learning (ML) modeling approach used to
+estimate temporal trends in the percentage cover of five major benthic
+categories (hard coral, macroalgae, turf algae, coralline algae, and
+other fauna) on the world’s coral reefs from 1980 to 2024. y denotes
+the observed percentage cover values (i.e., _measurementValue_ in
+Table 3.2) for a given benthic category; pred. represents the set of
+predictors used in the ML model; and $\hat{y}$ indicates the predicted
+percentage cover values for a given benthic category across coral reef
+sites.
+
+:::
+
+#### Preprocessing
+
+##### Data selection
+
+We extracted benthic cover monitoring data from the gcrmndb_benthos
+synthetic dataset (see @sec-data-integration).  As this report
+focuses on the status and trends of shallow coral reefs, we retained
+surveys conducted at depths of 0–30 m [@Rocha-2018]. Surveys with
+missing depth information were retained to minimize data loss.  In
+addition, some sites not flagged as erroneous during the quality
+checks of the data integration step (see @sec-quality-checks)
+were removed at this stage based on recommendations from data
+contributors.
+
+After applying these selection criteria, the dataset used for modeling
+comprised 265 individual datasets, representing 87,701 surveys
+conducted across 37,799 sites between 1973 and 2025 (**Table
+1.3.1**). Although we modeled benthic cover trends from 1980 to 2024, we
+included observed data from 1970 to 2025 for model training in order
+to maximize the dataset size. The number of sites varied among benthic
+categories, as not all monitoring programs surveyed all categories
+included in this report. The full list of datasets used per region is
+provided in **Supplementary Table 1**.
+
+##### Exploratory data analysis {#sec-exploratory-data-analysis}
+
+We conducted an exploratory data analysis on the benthic cover dataset
+to identify potential inconsistencies that could bias model
+predictions.
+
+We plotted and visually inspected the distribution of percentage cover
+values (from the variable `measurementValue`) for each benthic
+category across both datasets (`datasetID`) and maritime areas. When
+distributions differed notably from those observed in other datasets
+or areas, we systematically reviewed the corresponding R scripts used
+for data standardization to ensure that these discrepancies were not
+the result of data integration errors.
+
+Particular attention was given to the presence of zero values in the
+`measurementValue` variable. In the context of coral reef benthic
+cover, removing zero values can lead to biased temporal trends by
+overestimating the mean percentage cover of certain categories.
+
+Together with the quality control procedures applied during data
+integration (see @sec-quality-checks), this exploratory data
+analysis provided an additional means of verifying the overall
+reliability and consistency of the data
+
+#### Data transformation
+
+The final pre-processing step consisted of preparing the dataset for
+use in the modeling analyses. For each sampling unit (i.e., site,
+transect, or quadrat), percentage cover values were summed for each of
+the five major benthic categories. To ensure consistency across
+datasets, the average benthic cover per transect was then calculated,
+thereby reducing the influence of semi-quantitative photo-quadrat
+datasets (e.g., those with a limited number of observation points).
+
+#### Selection of sites to predict {#sec-selection-of-sites-to-predict}
+
+To be able to get estimations of benthic categories’ percentage cover
+over sites representative of coral reefs of the world, and not on
+sites where monitoring data were available, it was necessary to select
+sites on which predictions would be made. To this end, we randomly
+sampled 20,000 sites across the world’s coral reefs using a modified
+version of the Tropical Coral Reefs of the World dataset
+[@CoralReefsOfTheWorld-2011; see @sec-coral-reef-distribution]. The
+number of sites was generated proportionally to the extent of the
+reefs in each ecoregion so that at least one site was sampled for each
+of them. Although the number of sites selected may seem low, each site
+was later repeated for each year from 1980 to 2024, which means that
+each model must have predicted almost a million rows (see
+@sec-predictions). @fig-3.5 compares the spatial distribution of sites
+with observed data with those selected for making predictions using
+the example of Cuba. Although we assumed that the coral reef
+distribution shapefile used for this purpose provides a representative
+depiction of the true spatial distribution of coral reefs within the
+region, we acknowledge that this working hypothesis may not hold true,
+particularly at finer spatial scales.
+
+::: {.figure #fig-3.5}
+
+![](resources/fig-3.5.png){width=500px}
+
+Comparison of the spatial distributions of sites with observed data
+and sites used for making predictions, using Cuba as an example. In
+the left panel figure, coral reef distribution is represented in light
+blue
+
+:::
+
+
+#### Extraction of predictors
+
+We derived a total of 26 predictors, encompassing various
+environmental and anthropogenic dimensions: six related to spatial
+characteristics, one to temporal variation, three to hurricane regime,
+twelve to thermal regime, two to water quality, and two to direct
+human influence. These predictors were used both to train and test the
+models based on sites with observed data and to generate predictions
+for selected sites (see @sec-selection-of-sites-to-predict). The
+complete list of predictors included in the modeling framework, along
+with their corresponding data sources, is provided below.
+
+
+
+::: {.callout-note collapse=true}
+#### Show data source information
+
+1.	`decimalLatitude`
+
+- **Category**: Spatial
+
+- **Data source**: gcrmndb_benthos (training) / Tropical Coral Reefs of
+  the World [@CoralReefsOfTheWorld-2011] (prediction)
+
+- **Spatial resolution**: Unknown, but variable (training) / 500 m
+  (prediction)
+
+- **Temporal resolution**: None
+
+- **Description**: The latitude of the site
+
+- **Percentage of missing values**: 0% (training/testing) and 0%
+  (prediction)
+
+2. `decimalLongitude`
+
+- **Category**: Spatial
+
+-	**Data source**: gcrmndb_benthos / Tropical Coral Reefs of
+  the World [@CoralReefsOfTheWorld-2011] 
+
+-	**Spatial resolution**: Unknown, but variable / 500 m
+
+-	**Temporal resolution**: None
+
+-	**Description**: The longitude of the site
+
+-	**Percentage of missing values**: 0% (training/testing) and 0% (prediction)
+
+3. `verbatimDepth`
+
+-	**Category**: Spatial
+
+- **Data source**: gcrmndb_benthos / Tropical Coral Reefs of
+  the World [@CoralReefsOfTheWorld-2011] 
+
+-	**Spatial resolution**: Unknown, but variable / 500 m
+
+-	**Temporal resolution**: None
+
+-	**Description**: The longitude of the site
+
+-	**Percent	Data source**: gcrmndb_benthos / None
+
+-	**Spatial resolution**: Unknown, but variable
+
+-	**Temporal resolution**: None
+
+-	**Description**: The depth at which the survey was conducted
+
+-	**Percentage of missing values**: 14.5% (training/testing) and 100% (prediction)
+
+4. `year`
+
+-	**Category**: Temporal
+
+-	**Data source**: gcrmndb_benthos / Generated
+
+-	**Spatial resolution**: None
+
+-	**Temporal resolution**: None
+
+-	**Description**: The year at which the measurement of percentage cover was done
+
+-	**Percentage of missing values**: 0% (training/testing) and 0% (prediction)
+
+5. `windspeed_y1`
+
+-	**Category**: Hurricane regime
+
+-	**Data source**: International Best Track Archive for Climate Stewardship (IBTrACS) Version 4 (Knapp et al., 2010)
+
+-	**Spatial resolution**: 0.1° (~10 km)
+
+-	**Temporal resolution**: 3 hourly (interpolated, most raw data are 6 hourly)
+
+-	**Description**: Maximum sustained wind speed of cyclones passed within 1° (~ 111 km) from the site during the year preceding year i
+
+-	**Percentage of missing values**: 11% (training/testing) and 7% (prediction)
+
+6. `nb_cyclones_y1`
+
+-	**Category**: Hurricane regime
+
+-	**Data source**: International Best Track Archive for Climate Stewardship (IBTrACS) Version 4 (Knapp et al., 2010)
+
+-	**Spatial resolution**: 0.1° (~10 km)
+
+-	**Temporal resolution**: 3 hourly (interpolated, most raw data are 6 hourly)
+
+-	**Description**: Number of cyclones passed within 1° (~ 111 km) from the site during the year preceding year i
+
+-	**Percentage of missing values**: 11% (training/testing) and 7% (prediction)
+
+7. `cyclones_freq`
+
+-	**Category**: Hurricane regime
+
+-	**Data source**: International Best Track Archive for Climate Stewardship (IBTrACS) Version 4 (Knapp et al., 2010)
+
+-	**Spatial resolution**: 0.1° (~10 km)
+
+-	**Temporal resolution**: 3 hourly (interpolated, most raw data are 6 hourly)
+
+-	**Description**: Annual frequency of cyclones that passed within 1° (~ 111 km) of the site during the period 1980-2024
+
+-	**Percentage of missing values**: 11% (training/testing) and 7% (prediction)
+
+8. `elevation`
+
+-	**Category**: Spatial
+
+-	**Data source**: Shuttle Radar Topography Mission (SRTM) Digital Elevation Data Version 4
+
+-	**Spatial resolution**: 90 m
+
+-	**Temporal resolution**: None (one-shot)
+
+-	**Description**: Mean (above-sea) elevation from a 30 km radius from the site
+
+-	**Percentage of missing values**: 0.03% (training/testing) and 0% (prediction)
+
+9. `reefextent`
+
+-	**Category**: Spatial
+
+-	**Data source**: Allen Coral Atlas (ACA) Geomorphic Zonation and Benthic Habitat Version 2.0 (Lyons et al., 2024)
+
+-	**Spatial resolution**: 5 m
+
+-	**Temporal resolution**: None (one-shot)
+
+-	**Description**: Total area of coral reef habitat from a 10 km radius from the site
+
+-	**Percentage of missing values**: 0.03% (training/testing) and 0% (prediction)
+
+10.	`land`
+
+-	**Category**: Spatial
+
+-	**Data source**: Shuttle Radar Topography Mission (SRTM) Digital Elevation Data Version 4
+
+-	**Spatial resolution**: 90 m
+
+-	**Temporal resolution**: None (one-shot)
+
+-	**Description**: Total land area from a 30 km radius from the site
+
+-	**Percentage of missing values**: 0.03% (training/testing) and 0% (prediction)
+
+11.	`gravity`
+
+-	**Category**: Human influence
+
+-	**Data source**: [@Cinner-2018]
+
+-	**Spatial resolution**: 10 km
+
+-	**Temporal resolution**: None (one-shot)
+
+-	**Description**: Gravity value on the site. Gravity can be seen as a proxy of direct human impact on coral reefs and is calculated from human population and reef accessibility 
+
+-	**Percentage of missing values**: 22% (training/testing) and 8% (prediction)
+
+12.	`enso`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: Nino 3.4 Index
+
+-	**Spatial resolution**: None
+
+-	**Temporal resolution**: Monthly
+
+-	**Description**: Average Nino 3.4 Index monthly values over the last two years from the year i
+
+-	**Percentage of missing values**: 2.3% (training/testing) and 4.4% (prediction)
+
+13.	`sst_sd`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA CDR Optimum Interpolation Sea Surface Temperature (OISST) Version 2.1 
+
+-	**Spatial resolution**: 27,830 m
+
+-	**Temporal resolution**: Daily (from 1981-09-01)
+
+-	**Description**: Long-term SST standard deviation on the site, derived from 1981 to 2024 daily SST values
+
+-	**Percentage of missing values**: 5.1% (training/testing) and 6.3% (prediction)
+
+14.	`sst_skewness`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA CDR Optimum Interpolation Sea Surface Temperature (OISST) Version 2.1 
+
+-	**Spatial resolution**: 27,830 m
+
+-	**Temporal resolution**: Daily (from 1981-09-01)
+
+-	**Description**: Long-term SST skewness on the site, derived from 1981 to 2024 daily SST values
+
+-	**Percentage of missing values**: 5.1% (training/testing) and 6.3% (prediction)
+
+15.	`sst_max`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA Coral Reef Watch [@Skirving-2020]
+
+-	**Spatial resolution**: 5,000 m
+
+-	**Temporal resolution**: Yearly (from 1985)
+
+-	**Description**: Maximum annual SST values on the site for the year i
+
+-	**Percentage of missing values**: 10.1% (training/testing) and 11.3% (prediction)
+
+16.	`sst_max_y1`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA Coral Reef Watch [@Skirving-2020]
+
+-	**Spatial resolution**: 5,000 m
+
+-	**Temporal resolution**: Yearly (from 1985)
+
+-	**Description**: Maximum annual SST values on the site for the year i-1. This lagged version of the predictor “sst_max” was included to take into account the time needed for the percentage cover to be impacted by the event(s).
+
+-	**Percentage of missing values**: 10.1% (training/testing) and 13.5% (prediction)
+
+17.	`sst_mean`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA Coral Reef Watch [@Skirving-2020]
+
+-	**Spatial resolution**: 5,000 m
+
+-	**Temporal resolution**: Yearly (from 1985)
+
+-	**Description**: Mean annual SST values on the site for the year i
+
+-	**Percentage of missing values**: 10.1% (training/testing) and 11.3% (prediction)
+
+18.	`sst_mean_y1`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA Coral Reef Watch [@Skirving-2020]
+
+-	**Spatial resolution**: 5,000 m
+
+-	**Temporal resolution**: Yearly (from 1985)
+
+-	**Description**: Mean annual SST values on the site for the year  i-1. This lagged version of the predictor “sst_mean” was included to take into account the time needed for the percentage cover to be impacted by the event(s).
+
+-	**Percentage of missing values**: 10.1% (training/testing) and 13.5% (prediction)
+
+19.	`sst_min`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA Coral Reef Watch [@Skirving-2020]
+
+-	**Spatial resolution**: 5,000 m
+
+-	**Temporal resolution**: Yearly (from 1985)
+
+-	**Description**: Minimum annual SST values on the site for the year i
+
+-	**Percentage of missing values**: 10.1% (training/testing) and 11.3% (prediction)
+
+20.	`ssta_mean`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA Coral Reef Watch [@Skirving-2020]
+
+-	**Spatial resolution**: 5,000 m
+
+-	**Temporal resolution**: Yearly (from 1985)
+
+-	**Description**: Mean annual SST anomaly values on the site for the year i
+
+-	**Percentage of missing values**: 10.1% (training/testing) and 11.3% (prediction)
+
+21.	`ssta_max`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA Coral Reef Watch [@Skirving-2020]
+
+-	**Spatial resolution**: 5,000 m
+
+-	**Temporal resolution**: Yearly (from 1985)
+
+-	**Description**: Maximum annual SST anomaly values on the site for the year i
+
+-	**Percentage of missing values**: 10.1% (training/testing) and 11.3% (prediction)
+
+22.	`dhw_max`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA Coral Reef Watch [@Skirving-2020]
+
+-	**Spatial resolution**: 5,000 m
+
+-	**Temporal resolution**: Yearly (from 1986)
+
+-	**Description**: Maximum Degree Heating Week (DHW) value on the site for the year i
+
+-	**Percentage of missing values**: 10% (training/testing) and 13.5% (prediction)
+
+23.	`dhw_max_y1`
+
+-	**Category**: Thermal regime
+
+-	**Data source**: NOAA Coral Reef Watch [@Skirving-2020]
+
+-	**Spatial resolution**: 5,000 m
+
+-	**Temporal resolution**: Yearly (from 1986)
+
+-	**Description**: Maximum Degree Heating Week (DHW) value on the site for the year  i-1. This lagged version of the predictor “dhw_max” was included to take into account the time needed for the percentage cover to be impacted by the event(s).
+
+-	**Percentage of missing values**: 10% (training/testing) and 15.7% (prediction)
+
+24.	`chla_mean`
+
+-	**Category**: Water quality
+
+-	**Data source**: Ocean Color SMI: Standard Mapped Image MODIS Aqua Data
+
+-	**Spatial resolution**: 4,616 m
+
+-	**Temporal resolution**: Unknown
+
+-	**Description**: Long-term average of chlorophyll a concentration (in mg/m3) from a 10 km radius from the site from 2002-01-01 to 2022-12-31.
+
+-	**Percentage of missing values**: 2.6% (training/testing) and 4.3% (prediction)
+
+25.	`chla_sd`
+
+-	**Category**: Water quality
+
+-	**Data source**: Ocean Color SMI: Standard Mapped Image MODIS Aqua Data
+
+-	**Spatial resolution**: 4,616 m
+
+-	**Temporal resolution**: Unknown
+
+-	**Description**: Long-term standard deviation of chlorophyll a concentration (in mg/m3) from a 10 km radius from the site from 2002-01-01 to 2022-12-31.
+
+-	**Percentage of missing values**: 2.6% (training/testing) and 4.3% (prediction)
+
+26.	`population`
+
+-	**Category**: Human influence
+
+-	**Data source**: Gridded Population of the World (GPW) Version 4.11
+
+-	**Spatial resolution**: 927.67 m
+
+-	**Temporal resolution**: Yearly (for years 2000, 2005, 2010, 2015, and 2020). Missing values for the years 2000–2024 were estimated using a linear model.
+
+-	**Description**: Total number of inhabitants living within 5 km from the site on the year i
+
+-	**Percentage of missing values**: 4.8% (training/testing) and 44.4% (prediction)
+
+:::
+
+
+After extracting the predictor values, we examined the number of
+missing values for each predictor and each year. This control step
+aimed to identify potential issues in the extraction process that
+could result in an abnormally high number of missing values, thereby
+reducing the amount of usable information available for models
+development (i.e. training and testing) and prediction.  The
+performance of GBM models is generally unaffected by the inclusion of
+non-informative predictors, as these models inherently perform feature
+selection during training [@Kuhn-2013]. Feature selection involves
+identifying and removing highly correlated predictors, which represent
+redundant sources of information [@Boehmke-2019]. Although this step
+is not strictly necessary for GBM models, we examined the Pearson
+correlation coefficients among all predictors using pairwise linear
+regressions and excluded variables with correlation coefficients
+greater than 0.90 or lower than –0.90. This optional procedure was
+implemented primarily to reduce model computation time. As a result of
+this process, the predictor `sst_mean_y1` was removed, leaving a total
+of 25 predictors used in the final models.
+
+The high predictive potential of ML models is often constrained by
+data availability, particularly the ability to integrate a sufficient
+number of predictors at adequate spatio-temporal resolutions. Not all
+factors known to influence the percentage cover of benthic categories
+can be incorporated into the modeling framework due to data
+limitations. For instance, although Stony Coral Tissue Loss Disease
+(SCTLD) has been identified as a major driver of hard coral mortality
+in the Caribbean [@Alvarez-Filip-2022], the scarcity of
+monitoring programs quantifying SCTLD prevalence prevents its
+inclusion as a predictor variable.
+
+Beyond data availability, the spatio-temporal resolution of predictors
+also represents a critical limitation. We assumed that the extracted
+predictor values accurately reflected in situ conditions - those that
+would have been measured directly at a given site and time. However,
+we acknowledge that the resolution of some predictors is insufficient
+to capture small-scale variability. For example, substantial
+differences in sea surface temperature (SST) may occur within a single
+5 km x 5 km pixel [@Green-2019], which corresponds to the spatial
+resolution of NOAA’s CoralTemp dataset [@Skirving-2020]. Moreover, by
+definition, SST data do not account for temperature variations with
+depth, which can nevertheless be considerable [@Leichter-2006].
+
+#### Machine learning models
+
+Machine learning encompasses a wide range of methods (e.g., support
+vector machines, random forests) that can be applied to classification
+or regression tasks (Boehmke and Greenwell, 2020). Among these, we
+selected Gradient Boosting Machines (GBM, also referred to as Boosted
+Regression Trees), and specifically the XGBoost algorithm, due to its
+high predictive performance [@Boehmke-2019; Chen-2025].
+
+Contrary to other modelling approaches such as Bayesian models, like
+the one used for the “Status of Coral Reefs of the World: 2020” GCRMN
+report [@Souter-2021], ML models are not intrinsically built to
+consider uncertainty [@Rubbens-2023]. However, confidence intervals
+can be estimated for ML models using bootstrap. Bootstrapping consists
+of sampling randomly the initial dataset with replacement, to produce
+variability within the new dataset [@Boehmke-2019]. This means that
+the number of initial rows remained the same, but that some rows were
+either removed, present one time, or duplicated (one or several times)
+into the new dataset, due to the sampling. For the purpose of this
+report, we used a stratified bootstrap per datasetID. This was done to
+obtain more representative confidence intervals and stabilize
+estimates. This approach also helps limit the impact that adding new
+datasets or removing existing ones may have on the results.
+
+A key challenge in ML is overfitting, where a model performs extremely
+well on the training dataset but poorly on new, unseen data
+[@Kuhn-2013].  A common strategy to reduce overfitting is to partition
+the dataset into a training set and a testing set. The training set is
+used to fit the model, while the testing set is used to evaluate
+predictive accuracy on independent data. For this study, we applied a
+75/25 split, assigning 75% of observations (i.e., rows) to the
+training dataset and 25% to the testing dataset.
+
+In addition, GBM models include multiple hyperparameters that must be
+tuned to optimize predictive performance and limit overfitting. Model
+tuning involves identifying the best combination of hyperparameters
+that maximize predictive accuracy. For each bootstrap iteration, we
+tested 10 combinations of five hyperparameters: learning rate, number
+of trees, tree depth, minimum observations per leaf, and loss
+reduction. The learning rate (also referred to as shrinkage) controls
+the step size during gradient descent; the number of trees specifies
+the ensemble size; tree depth defines the maximum number of levels in
+each tree; minimum observations per leaf sets the smallest number of
+observations required to form a terminal node; loss reduction (also
+known as gamma) sets the structural complexity of the trees. The 10
+hyperparameter combinations were selected to ensure broad coverage of
+the hyperparameter space (i.e., maximizing entropy). Model performance
+during hyperparameter tuning was assessed using 3-fold
+cross-validation on the training dataset.
+
+We fitted 20 ML models, one corresponding to a bootstrap iteration,
+for each of the five major benthic categories (hard coral, macroalgae,
+turf algae, coralline algae, and other fauna), by training the model
+on a new dataset, generated through bootstrapping. Although we could
+have kept the same hyperparameters from one bootstrap iteration to
+another, which would have saved a lot of computation time, we decided
+to rerun the hyperparameter tuning at each iteration to stabilize the
+model results.
+
+#### Model evaluation
+
+##### Model performance
+
+The Root Mean Square Error (RMSE) is the most common metric used to
+evaluate the performance of ML regression models. Since RMSE is
+expressed in the same unit as the variable predicted, it represents an
+easy-to-interpret metric [@Kuhn-2013]. For example, a RMSE
+value of 5 means that the value predicted by the model differed, on
+average, by 5 percent of hard coral cover. Hence, the lower the RMSE
+value, the better the model’s predictive performance. We calculated
+the RMSE as follows:
+
+$$
+\mathrm{RMSE} = \sqrt{\frac{1}{n} \sum_{i=1}^n (y_i - \hat{y}_i)^2}
+$$
+
+where $n$ is the number of observations, $y_i$ is the observed value
+$i$, and $\hat{y}_i$ the predicted value i. In addition to the RMSE,
+we also calculated the R² (also known as R-squared or coefficient of
+determination), which is a widely used metric in statistics,
+particularly for linear regression. R² is usually interpreted as the
+proportion of the information from the data that is explained by the
+model [@Kuhn-2013]. For example, an R² of 0.80 indicates that the
+model explains 80% of the variation of the data. We calculated R² as
+follows:
+
+$$
+R^2 = 1 - \frac{\sum_{i=1}^n (y_i - \hat{y}_i)^2}{\sum_{i=1}^n (y_i - \bar{y})^2}
+$$
+
+where $n$ is the number of observations, $y_i$ is the observed value
+$i$, $\hat{y}_i$ the predicted value $i$, and $\bar{y} the mean of
+observed values. RMSE and R² represent two complementary metrics of
+model performance. Indeed, RMSE describes how well the model performs
+on average, while R² provides a measure of correlation [@Kuhn-2013].
+
+Metrics for regression models such as RMSE and R² are not sufficient
+alone to estimate the performance of a ML model. Indeed, these metrics
+provide a single value to evaluate the overall performance of the ML
+model and can mask poor predictions over certain ranges of variation
+of the variable to be predicted. For this reason, we plotted predicted
+versus observed values on the testing dataset and we checked for the
+distribution of residuals.
+
+##### Model interpretation
+
+Although ML models are sometimes described as “black box” models,
+there exists in fact different tools to interpret these models
+[@Biecek-2021; @Boehmke-2019]. We used variable importance plots
+[VIMP, see page 207 in @Kuhn-2013] to compare the relative influence
+of each predictor on the percentage cover of each of the five major
+benthic categories. However, we restricted our interpretations of the
+VIMP to model evaluation rather than using them for their explicative
+capabilities. Hence, interpretation of VIMP can also be seen as a
+third way to control data quality, along with quality checks (see
+@sec-quality-checks) and exploratory data analysis (see
+@sec-exploratory-data-analysis).
+
+#### Predictions {#sec-predictions}
+
+We predicted values of percentage cover for each of the five major
+benthic categories, across 20,000 sites over coral reefs of the
+world. For each site, values were predicted for 44 years (i.e. from
+1980 to 2024), resulting in a total of 880,000 predictions of
+percentage cover values performed by each ML model. These predictions
+were obtained for the 20 bootstrap iterations. Because we were
+interested in temporal trends at a higher spatial scale than sites, we
+averaged the predictions per area or over the entire world, for each
+year and each bootstrap iteration. Then, we calculated mean percentage
+cover for each of the five major benthic categories, for each year
+across the 20 bootstrap iterations. In addition, we calculated the 95%
+upper and lower bounds of confidence intervals around the mean by
+using the 0.975 and 0.025 quantiles, respectively. The same process
+was carried out on the regional and sub-regional scales.
+
+
+#### Code availability
+
+All scripts used to generate the values, tables, figures, and maps
+presented in this report are available at
+<https://github.com/GCRMN/global_2024>. Data analyses relying on
+Google Earth Engine [@Gorelick-2017] were implemented in
+JavaScript. Machine learning models were executed using R scripts on
+an RStudio Server hosted on a Google Cloud virtual machine (50 GB
+storage, 64 GB RAM, 8 CPUs, Ubuntu). Other R scripts were run on a
+Dell Inspiron 7780 personal computer (32 GB RAM, Windows 11). Most
+analyses were conducted in R version 4.5.1 [@R-4.5-1], primarily using
+the packages tidyverse v2.0.0 [@Wickham-2019], tidymodels v1.3.0
+[@Kuhn-2020], and sf v1.0-21 [@Pebesma-2023]. The complete list of R
+packages used and their associated versions is provided in the README
+file of the GitHub repository.
+
+
+## Preparations
+
+This document provides code chunks that pertain to the preparation and
+analysis of the Bayesian Hierarchical models.  The xgboost model code
+is provided and documented elsewehere.
+
+### Spatial layers
+
+::: {.panel-tabset}
+
+#### R
+
+```{r}
+#| label: cwd
+#| eval: false
+#| echo: false
+#| warning: false
+#| message: false
+#| cache: false
+getwd()
+```
+
+Load the necessary R libraries
+
+```{r}
+#| label: spatial libraries
+#| output: false
+#| eval: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+Establish the global environment and paths
+
+```{r}
+#| label: spatial global parameters
+#| results: hide
+#| eval: true
+#| echo: true
+#| cache: false
+```
+
+:::
+
+
+:::: {.panel-tabset}
+
+#### World map layers
+
+::: {.panel-tabset}
+
+##### R
+
+```{r}
+#| label: ne countries
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+#### Reef grid
+
+::: {.panel-tabset}
+
+##### R
+
+```{r}
+#| label: reef grid
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+#### Ecoregions (MEOWs)
+
+::: {.panel-tabset}
+
+##### R
+
+```{r}
+#| label: ecoregions
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+#### Ecoregion lookup
+
+::: {.panel-tabset}
+
+##### R
+
+```{r}
+#| label: ecoregion lookup
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+
+::::
+
+
+#### Process spatial data
+
+:::: {.panel-tabset}
+
+##### Reef grid
+
+::: {.panel-tabset}
+
+###### R
+
+```{r}
+#| label: process grid reef
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+##### Join MEOWs and lookup
+
+::: {.panel-tabset}
+
+###### R
+
+```{r}
+#| label: join meow and ecoregion_lookup
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+##### Process spatial weights
+
+::: {.panel-tabset}
+
+###### R
+
+```{r}
+#| label: process patial weights
+#| eval: false
+#| echo: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+:::
+
+
+::::
+
+
+
+### Benthic data
+
+::: {.panel-tabset}
+
+#### R
+
+Load the necessary R libraries
+
+```{r}
+#| label: spatial libraries
+#| output: false
+#| eval: true
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+Establish the global environment and paths
+
+```{r}
+#| label: processing global parameters
+#| results: hide
+#| eval: true
+#| echo: true
+#| cache: false
+```
+
+:::
+
+#### Import benthic data
+
+Benthic data
+
+```{r}
+#| label: read benthic data
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+Benthic prediction data
+
+```{r}
+#| label: read benthic prediction data
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+#### Process benthic data
+
+1. Process benthic data (Part 1. add ecoregions)
+
+```{r}
+#| label: process benthic data Part 1. add ecoregions
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+2. Process benthic data (Part 2. add grid data)
+
+```{r}
+#| label: process benthic data Part 2. add grid data
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+3. Process benthic data (Part 3. add factors)
+
+```{r}
+#| label: process benthic data Part 3. add factors
+#| output: false
+#| eval: false
+#| warning: false
+#| message: false
+#| cache: false
+```
+
+
 
 
 ## Modelled trends
@@ -995,12 +2111,12 @@ Set up the nested data for modelling
 #| cache: false
 ```
 
-### STAN code (model2.stan)
+### STAN code (gcrmn_model.stan)
 
 ```{R}
 #| label: fit models stan code
 #| echo: false
-cat(readLines("../R/model2.stan"), sep = "\n")
+cat(readLines("../R/gcrmn_model_43.stan"), sep = "\n")
 ```
 
 ### Fit STAN models

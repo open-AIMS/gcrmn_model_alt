@@ -13,3 +13,5 @@ R/_targets/
 R/*.png
 R/*.rds
 R/*.stan
+output/
+data/primary

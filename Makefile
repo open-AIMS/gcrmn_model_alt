@@ -67,6 +67,12 @@ slurm_R:
 	rm -f analysis_*.stderr
 	sbatch analysis.slurm
 
+slurm_docs:
+	@echo "Running R render documents pipeline via slurm..."
+	rm -f docs_*.log
+	rm -f docs_*.stderr
+	sbatch docs.slurm
+
 # %.html: %.qmd $(RUN_R_FLAG) $(PYTHON_SRC_DIR)/%.py
 %.html: %.qmd
 	@echo "Rendering $< to $@..."
