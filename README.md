@@ -30,11 +30,67 @@ For example:
 git clone https://github.com/open-AIMS/gcrmn_model_alt.git .
 ```
 
-## Including data
+## Repository structure
+
+```
+|-- data
+|   |-- primary
+|   |   |-- meow.RData
+|   |   |-- ecoregion.lookup.RData
+|-- docs
+|   |-- resources
+|   |   |-- <various resouces for document preparation>
+|   |-- australia.qmd
+|   |-- brazil.qmd
+|   |-- caribbean.qmd
+|   |-- compare_models.qmd
+|   |-- eas.qmd
+|   |-- etp.qmd
+|   |-- pacific.qmd
+|   |-- persga.qmd
+|   |-- ropme.qmd
+|   |-- south_asia.qmd
+|   |-- wio.qmd
+|-- R
+|   |-- _targets.R
+|   |-- helper_function.R
+|   |-- process_spatial.R
+|   |-- process_benthic_data.R
+|   |-- fit_models.R
+|   |-- aggregate_models.R
+|-- stan
+|   |--gcrmn_model_43.stan
+|-- .gitignore
+|-- Dockerfile
+|-- Makefile
+|-- README.md
+|-- analysis.slurm
+|-- dashboard.sh
+|-- docs.slurm
+```
+
+- the `docs` directory comprises of the quarto documents and resources
+  required for compiling self-contained HTML results documents for
+  each GCRMN regions as well as an overal statistical methods and
+  comparison document (compare_models.qmd).
+
+- the R scripts comprise a R targets pipeline in which the collated
+  data (not supplied in this repo) are processed, Bayesian
+  Hierarchical models are fit seperately for each ecoregion and
+  benthic category and the posteriors are aggregated up from ecoregion
+  level to subregion, then region and finally, whole globe scale.
+
+- the stan model is provided in the stan directory
+
+- the root of the repository also contains a Dockerfile to assist with
+  reproducibility over time as well as a Makefile and slurm files to
+  assist with running the analyses in various locations.
+
+## Input data
 
 The cloned repo will already have some of the necessary directory
-structure in place.  To complete all the data requirements, ensure
-that the directory tree initially looks like the following:
+structure in place.  However, to complete all the data requirements,
+ensure that the directory tree initially looks like the following:
 
 ```
 |-- data
@@ -55,7 +111,10 @@ that the directory tree initially looks like the following:
 ```
 
 Note, `meow.RData` and `ecoregion.lookup.RData` are already in the
-repository.
+repository. All other data, must be separately obtained - they cannot
+be shared in this repository due to licencing or data sharing
+agreements.
+
 
 ## Building the environment
 
@@ -70,10 +129,19 @@ indicated in the Dockerfile are installed and available.
 
 ## Docker
 
-A docker container can be built via the following:
+A docker image can be built via the following:
 
 ```
 make build_docker
+```
+
+## Apptainer/Singularity
+
+An Apptainer/Singularity image (for HPC) can be built from a Docker
+image via the following:
+
+```
+make build_singularity
 ```
 
 ## Running the codes
@@ -111,51 +179,75 @@ make R_container
 make docs_container
 ```
 
-### Via apptainer/singularity
+### Via Apptainer/Singularity
 
 1. submit a job to slurm that runs the R codes.  This will run all the
    R based analyses using the `targets` package to ensure all steps
    are performed in the correct order.
 
 ```
-sbatch analysis.slurm
+make slurm_R
 ```
 
 2. submit a job to slurm that renders the document. This will render
    the quarto document to html
 
 ```
-sbatch docs.slurm
+make slurm_docs
 ```
+
+## Outputs
+
+When running the R analysis pipeline outputs will be stored in the
+following locations (according to artifact type):
+
+- `data/`
+  - `mod_*`: stan models
+  - `posteriors_*`: extracted posteriors of the stan models
+  - `cellmeans_*: summarised posteriors
+
+- `output/figures`
+  - ...: modelled time series representations
+
+- `output/tables`
+  - ...: tabular versions of the outputs
+
 
 ## Debugging the code
 
 ### Via docker
-In order to edit the code (for the purpose of debugging or adding
-additional features):
 
-1. load the `R/_targets.R` script
-2. start a new terminal (**in the project root folder**)
-3. run
+In order to run the code interactively (for the purpose of debugging
+or adding additional features):
+
+1. start a new terminal (**in the project root folder**)
+2. run
 
 ```
 docker run --rm -it -v $PWD:/home/Project gcrmn_alt
 ```
 
-4. set the working directory to the `R` directory
+This will mount the current working directory to `/home/Project`
+within the container and the container is set to automatically work
+from this location.  Hence, all codes and outputs will be exchanged
+via this mount point.
+
+3. set the working directory to the `R` directory
 
 ```
 setwd("R")
 ```
 
-5. load the necessary targets libraries
+4. load the `R/_targets.R` script in an editor (ideally on the host)
+5. establish a connection between the host and the R REPL (comint)
+6. load the necessary targets libraries
 
 ```
 library(targets)
 library(tarchetypes)
 ```
 
-6. load the other necessary libraries
+7. load the other necessary libraries
 
 ```
 packages = c("tidyverse", "sf", "synthos",
@@ -168,13 +260,14 @@ packages = c("tidyverse", "sf", "synthos",
 lapply(packages, library, character.only = TRUE)
 ```
 
-7. navigate the code as usual
+8. navigate the code as usual
 
 
 ### Via apptainer/singularity
 
-Follow the steps for docker except replace step 3 with:
+Follow the steps for docker except replace step 2 with:
 
 ```
 singularity exec -B .:/home/Project r-analysis2.sif R
 ```
+
