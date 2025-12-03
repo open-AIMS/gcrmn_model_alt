@@ -1,5 +1,8 @@
 GCMRN model comparisons
-=======================================================
+==========================
+
+![status](https://img.shields.io/badge/status-in%20dev.-blue)
+![version](https://img.shields.io/badge/version-0.1.0-blue)
 
 This respository comprises the codebase for fitting a bespoke Bayesian
 Hierarchical model to GCMRN data and comparing the resulting temporal
@@ -206,10 +209,10 @@ following locations (according to artifact type):
   - `posteriors_*`: extracted posteriors of the stan models
   - `cellmeans_*: summarised posteriors
 
-- `output/figures`
+- `output/figures/`
   - ...: modelled time series representations
 
-- `output/tables`
+- `output/tables/`
   - ...: tabular versions of the outputs
 
 
