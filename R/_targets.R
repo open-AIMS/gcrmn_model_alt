@@ -26,11 +26,13 @@ source("process_spatial.R")
 source("process_benthic_data.R")
 source("fit_models.R")
 source("aggregate_models.R")
+source("summary_figures.R")
 
 list(
   helper_functions(),
   process_spatial(),
   process_benthic_data(),
   fit_models(),
-  aggregate_models()
+  aggregate_models(),
+  summary_figures()
 )

@@ -10,9 +10,7 @@ aggregate_models <- function() {
       }
     ),
 
-    tar_target(
-      aggregate_global_parameters_,
-      {
+    tar_target(aggregate_global_parameters_, {
         ## ---- aggregate global parameters
         assign(x = "data_path", value = "../data/", envir = .GlobalEnv)
         assign(x = "primary_path", value = "../data/primary/", envir = .GlobalEnv)
@@ -33,67 +31,7 @@ aggregate_models <- function() {
       }
     ),
 
-
-    tar_target(aggregate_compile_, {
-      benthic_models <- fit_models_stan_partial_plot_
-      data_path <- fit_models_global_parameters_$data_path
-      output_path <- fit_models_global_parameters_$output_path
-      wts <- process_spatial_weights_
-      all_years <- get_all_years_
-      ## ---- aggregate_compile
-      wts <-
-        wts |>
-        mutate(region = GCRMN_region,
-               region = str_replace(region, "East Asia", "EAS"),
-               subregion = str_replace(GCRMN_subregion, "\\.", " "),
-               subregion = str_replace(subregion, "East Asia", "EAS"),
-               ecoregion = ECOREGION
-               )
-      benthic_posteriors <-
-        benthic_models |>
-        ungroup() |>
-        dplyr::select(region, subregion, ecoregion, category, posteriors) |>
-        unnest("posteriors") |>
-        left_join(wts, by = c("region", "subregion", "ecoregion")) |>
-        group_by(region, subregion, ecoregion, category) |>
-        nest() |>
-        mutate(posteriors = pmap(.l = list(data, subregion),
-                                .f = ~ {
-                                  fl <- ..1$posteriors
-                                  ## wt <- ..1$wt
-                                  dat <- map(.x = fl, #.y = wt,
-                                              .f =  ~ {
-                                                dat <- readRDS(.x) |>
-                                                  pivot_longer(cols = starts_with("Years")) |>
-                                                  group_by(.chain, .draw, .iteration) |>
-                                                  mutate(Year = all_years) |>
-                                                  ungroup() |>
-                                                  dplyr::select(-name)
-                                                  ## mutate(wt = .y,
-                                                  ##        value_wt = value * wt
-                                                  ##        )
-                                                dat
-                                              })
-                                  dat[[1]]
-                                }
-                                )) |>
-        mutate(summ = map(.x = posteriors,
-                          .f =  ~ {
-                            .x |>
-                              group_by(Year) |>
-                              posterior::summarise_draws(
-                                           median,
-                                           HDInterval::hdi,
-                                           ~ HDInterval::hdi(.x, credMass = c(0.8))
-                                         ) |>
-                              rename(lower_80 = V4, upper_80 = V5)
-                          }
-                          ))
-      ## ----end
-      benthic_posteriors
-    }
-    ),
-
+    ## Retrieve the xgboost predictions (supplied by Jeremy)
     tar_target(xgboost_data_, {
       data_path <- fit_models_global_parameters_$data_path
       ## ---- aggregate xgboost data
@@ -104,167 +42,151 @@ aggregate_models <- function() {
       data_xgboost
     }),
 
-    tar_target(aggregate_ecoregion_plots_, {
-      benthic_posteriors <- aggregate_compile_
+    ## Aggregate the posteriors for all ecoregions 
+    tar_target(compile_posteriors_, {
+      data_path <- aggregate_global_parameters_$data_path
+      all_years <- get_all_years_
+      ## ---- compile posteriors function
+      compile_posteriors <- function(data, type = "cellmeans_years") {
+        if (type == "cellmeans_years") {
+          fl <- data$posteriors_V2
+          dat <- map(.x = fl, #.y = wt,
+            .f =  ~ {
+              dat <- readRDS(.x) |>
+                pivot_longer(cols = starts_with("cellmeans_years")) |>
+                group_by(.chain, .draw, .iteration) |>
+                mutate(Year = all_years) |>
+                ungroup() |>
+                dplyr::select(-name)
+              dat
+            })
+        } else {
+          fl <- data$posteriors
+        dat <- map(.x = fl, #.y = wt,
+          .f =  ~ {
+            dat <- readRDS(.x) |>
+              pivot_longer(cols = starts_with("Years")) |>
+              group_by(.chain, .draw, .iteration) |>
+              mutate(Year = all_years) |>
+              ungroup() |>
+              dplyr::select(-name)
+            dat
+          })
+        }
+        dat[[1]]
+      }
+      # ----end
+      compile_posteriors
+    }),
+    tar_target(summarise_posteriors_, {
+      ## ---- summarise_posteriors function
+      summarise_posteriors <- function(.x) {
+        .x |>
+          group_by(Year) |>
+          posterior::summarise_draws(
+            median,
+            HDInterval::hdi,
+            ~ HDInterval::hdi(.x, credMass = c(0.8))
+          ) |>
+          rename(lower_80 = V4, upper_80 = V5)
+      }
+      ## ----end
+      summarise_posteriors
+    }),
+    tar_target(aggregate_compile_, {
+      ## benthic_models <- fit_models_stan_partial_plot_
+      benthic_models <- fit_models_stan_predict_
+      benthic_models <- benthic_models$benthic_models
       data_path <- fit_models_global_parameters_$data_path
       output_path <- fit_models_global_parameters_$output_path
       wts <- process_spatial_weights_
       all_years <- get_all_years_
+      compile_posteriors <- compile_posteriors_
+      summarise_posteriors <- summarise_posteriors_
+      ## ---- aggregate_compile
+      wts <-
+        wts |>
+        mutate(region = GCRMN_region,
+               region = str_replace(region, "East Asia", "EAS"),
+               subregion = str_replace(GCRMN_subregion, "\\.", " "),
+               subregion = str_replace(subregion, "East Asia", "EAS"),
+               ecoregion = ECOREGION
+               )
+
+      benthic_posteriors <-
+        benthic_models |>
+        dplyr::select(region, subregion, ecoregion, category, posteriors, stan_data) |>
+        unnest("posteriors") |>
+        left_join(wts, by = c("region", "subregion", "ecoregion")) |>
+        group_by(region, subregion, ecoregion, category, stan_data) |>
+        nest() |>
+        ungroup() |> 
+        mutate(posteriors = list(
+          parallel::mcmapply(FUN = compile_posteriors,
+            data, "Years",
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(posteriors = posteriors[[1]]) |>
+        mutate(cellmeans = list(
+          parallel::mcmapply(FUN = summarise_posteriors,
+            posteriors,
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(cellmeans = cellmeans[[1]]) |>
+        group_by(region, subregion, ecoregion, category)
+
+      ## ----end
+      benthic_posteriors
+    }
+    ),
+    tar_target(aggregate_compile_V2_, {
       benthic_models <- fit_models_stan_predict_
-      interpolate_values <- interpolate_values_
-      stan_partial_plot <- stan_partial_plot_
-      data_xgboost <- xgboost_data_
-      ## ---- aggregate_ecoregion_plots
-      data_xgboost <- data_xgboost |>
-        filter(!is.na(ecoregion)) |>
-        droplevels() |>
-        mutate(across(c(mean, lower_ci_95, upper_ci_95), function(x) x/100)) |>
-        group_by(region, subregion, ecoregion, category) |>
-        nest(.key = "xgboost")
-      xgboost_models <- data_xgboost |> pull(ecoregion) |> unique() |> sort()
-      stan_models <- benthic_models |> pull(ecoregion) |> unique() |> sort()
-      benthic_posteriors_ecoregions <-
-        benthic_posteriors |>
-        rename(other_data =  data) |>
-        left_join(benthic_models |>
-                  dplyr::select(region, subregion, ecoregion, category,
-                                data, name, stan_data),
-                  by = c("region", "subregion", "ecoregion", "category")) |>
-        left_join(data_xgboost,
-                  by = c("region", "subregion", "ecoregion", "category")) |>
-        ## filter(ecoregion == "Central and Southern Great Barrier Reef") |> droplevels() |>
-        mutate(plot =
-                 pmap(.l = list(summ, data, stan_data, name, xgboost),
-                      .f = ~ {
-                        cellmeans <- ..1
-                        dat <- ..2
-                        stan_data <- ..3
-                        name <- ..4
-                        title <- str_replace_all(name, "_", " ")
-                        ytitle <- str_replace(name, ".*_(.*)", "\\1")
-                        xgboost <- ..5
-                        ## plot without raw points
-                        g1 <- stan_partial_plot(cellmeans, stan_data,
-                                                data = NULL,
-                                                title = title,
-                                                ytitle = ytitle,
-                                                include_raw = FALSE)
-                        g1 <- g1 +
-                          theme(panel.grid.major.y = element_line(),
-                                panel.grid.minor.y = element_line(),
-                                panel.grid.major.x = element_line()
-                               )
-                        ## Now a version trimmed to minium data year
-                        g1a <- stan_partial_plot(
-                          cellmeans,
-                          stan_data,
-                          data = NULL,
-                          title = title,
-                          ytitle = ytitle,
-                          include_raw = FALSE,
-                          min_year = min(dat$Year))
-                        ## if (!str_detect(..4, "Cocos Islands|Northern Gulf of Mexico|Northern Galapagos Islands|Western Galapagos Islands")) {
-                        if (!any(str_detect(..4, setdiff(xgboost_models, stan_models))) &
-                            !is.null(xgboost)) {
-                          g1 <- g1 +
-                            geom_ribbon(data = xgboost, inherit.aes = FALSE,
-                              aes(y = mean, x = year,
-                                ymin = lower_ci_95, ymax = upper_ci_95),
-                              color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost, inherit.aes = FALSE,
-                              aes(y = mean, x = year), colour = "blue")
-                          ## Now a version trimmed to minium data year
-                          g1a <- g1a +
-                            geom_ribbon(data = xgboost |> filter(year >= (min(dat$Year))) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year,
-                                ymin = lower_ci_95, ymax = upper_ci_95),
-                              color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost |> filter(year >= (min(dat$Year))) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year), colour = "blue")
-                        }
-                        g2 <- stan_partial_plot(cellmeans, stan_data,
-                                                data = dat,
-                                                title = title,
-                                                ytitle = ytitle,
-                                                include_raw = TRUE)
-                        g2a <- stan_partial_plot(
-                          cellmeans,
-                          stan_data,
-                          data = dat,
-                          title = title,
-                          ytitle = ytitle,
-                          include_raw = TRUE,
-                          min_year = min(dat$Year))
+      benthic_models <- benthic_models$benthic_models
+      ## benthic_models <- fit_models_stan_partial_plot_
+      data_path <- fit_models_global_parameters_$data_path
+      output_path <- fit_models_global_parameters_$output_path
+      wts <- process_spatial_weights_
+      all_years <- get_all_years_
+      compile_posteriors <- compile_posteriors_
+      summarise_posteriors <- summarise_posteriors_
+      ## ---- aggregate_compile V2
+      wts <-
+        wts |>
+        mutate(region = GCRMN_region,
+               region = str_replace(region, "East Asia", "EAS"),
+               subregion = str_replace(GCRMN_subregion, "\\.", " "),
+               subregion = str_replace(subregion, "East Asia", "EAS"),
+               ecoregion = ECOREGION
+               )
 
-                        nm <- paste0(output_path, "figures/ecoregion_pdp_", "_", name, ".png")
-                        ggsave(
-                          filename = nm,
-                          g1,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        nma <- paste0(output_path, "figures/ecoregion_pdp_a_", "_", name, ".png")
-                        ggsave(
-                          filename = nma,
-                          g1a,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        nm2 <- paste0(output_path, "figures/ecoregion_pdpraw_", "_", name, ".png")
-                        ggsave(
-                          filename = nm2,
-                          g2,
-                          width =  6, height =  4, dpi =  72
-                        )
+      benthic_posteriors_V2 <-
+        benthic_models |>
+        dplyr::select(region, subregion, ecoregion, category, posteriors_V2, stan_data) |>
+        unnest("posteriors_V2") |>
+        left_join(wts, by = c("region", "subregion", "ecoregion")) |>
+        group_by(region, subregion, ecoregion, category, stan_data) |>
+        nest() |>
+        ungroup() |> 
+        mutate(posteriors = list(
+          parallel::mcmapply(FUN = compile_posteriors,
+            data, "cellmeans_years",
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(posteriors = posteriors[[1]]) |>
+        mutate(cellmeans = list(
+          parallel::mcmapply(FUN = summarise_posteriors,
+            posteriors,
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(cellmeans = cellmeans[[1]]) |>
+        group_by(region, subregion, ecoregion, category)
 
-                        nm2a <- paste0(output_path, "figures/ecoregion_pdpraw_a_", "_", name, ".png")
-                        ggsave(
-                          filename = nm2a,
-                          g2a,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        ## if (!str_detect(..4, "Cocos Islands|Northern Gulf of Mexico|Northern Galapagos Islands|Western Galapagos Islands")) {
-                        if (!any(str_detect(..4, setdiff(xgboost_models, stan_models))) &
-                        !is.null(xgboost)){
-                          nm3 <- paste0(output_path,
-                            "figures/ecoregion_pdprawxgboost_", "_", name, ".png")
-                          g3 <- g2 +
-                            geom_ribbon(data = xgboost, inherit.aes = FALSE,
-                              aes(y = mean, x = year,
-                                ymin = lower_ci_95, ymax = upper_ci_95),
-                              color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost, inherit.aes = FALSE,
-                              aes(y = mean, x = year), colour = "blue")
-                          ggsave(
-                            filename = nm3,
-                            g3,
-                            width =  6, height =  4, dpi =  72
-                          )
-                          nm3a <- paste0(output_path,
-                            "figures/ecoregion_pdprawxgboost_a_", "_", name, ".png")
-                          g3a <- g2a +
-                            geom_ribbon(data = xgboost |> filter(year >= min(dat$Year)) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year,
-                                ymin = lower_ci_95, ymax = upper_ci_95),
-                              color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost |> filter(year >= min(dat$Year)) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year), colour = "blue")
-                          ggsave(
-                            filename = nm3a,
-                            g3a,
-                            width =  6, height =  4, dpi =  72
-                          )
-                        }
-                        nm
-                      }
-                      ))
-      #benthic_posteriors_ecoregions # ----end
-      benthic_posteriors_ecoregions
+      ## ----end
+      benthic_posteriors_V2
     }
     ),
 
+    ## Aggregate the posteriors for all subregions 
     tar_target(wts_subregions_, {
       benthic_posteriors <- aggregate_compile_
       wts <- process_spatial_weights_
@@ -293,188 +215,77 @@ aggregate_models <- function() {
       ## ----end
     }
     ),
-
     tar_target(aggregate_subregions_, {
       benthic_posteriors <- aggregate_compile_
       wts <- wts_subregions_
-      library(data.table)
+      summarise_posteriors <- summarise_posteriors_
       ## ---- aggregate_subregions
       benthic_posteriors_subregions <-
         benthic_posteriors |>
-        ## filter(subregion == "Australia 1") |>
         dplyr::select(-data) |>
         unnest(posteriors) |>
         left_join(wts |> dplyr::select(region, subregion, ecoregion, wt),
                   by = c("region", "subregion", "ecoregion")) |>
-        ## ungroup(ecoregion) |>
-        ## group_by(.draw, Year, .add = TRUE) |>
         ungroup() |>
-        ## mutate(value_wt = value * wt) |>
         mutate(value_wt = as.double(value * wt)) 
-        ## group_by(region, subregion, category, .draw, Year) |>
-        ## ## summarise(value = sum(value * wt, na.rm = TRUE)) |>
-        ## ## summarise(value = sum(value_wt, na.rm = TRUE)) |>
-        ## ## summarise(value = .Primative("sum")(value_wt)) 
-        ## summarise(value = sum(value_wt)) #|> 
-        ## ## summarise(value = weighted.mean(value, w = wt, na.rm = TRUE)) |>
       
-      benthic_posteriors_subregions <- setDT(benthic_posteriors_subregions)[, .(value =  sum(value_wt)), by = c("region", "subregion", "category", ".draw", "Year")] |>
+      benthic_posteriors_subregions <-
+        data.table::setDT(benthic_posteriors_subregions)[, .(value =  sum(value_wt)),
+          by = c("region", "subregion", "category", ".draw", "Year")] |>
         as_tibble() |> 
         ungroup() |>
         group_by(region, subregion, category) |>
         nest(.key = "posteriors") |>
-        mutate(summ = map(.x = posteriors,
-                          .f =  ~ {
-                            .x |>
-                              group_by(Year) |>
-                              posterior::summarise_draws(
-                                           median,
-                                           HDInterval::hdi,
-                                           ~ HDInterval::hdi(.x, credMass = c(0.8))
-                                         ) |>
-                              rename(lower_80 = V4, upper_80 = V5)
-                            }
-                          ))
+        ungroup() |> 
+        mutate(cellmeans = list(
+          parallel::mcmapply(FUN = summarise_posteriors,
+            posteriors,
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(cellmeans = cellmeans[[1]]) |>
+        group_by(region, subregion, category) 
+      
       benthic_posteriors_subregions
       ## ----end
     }
     ),
-
-    tar_target(aggregate_subregion_plots_, {
-      benthic_posteriors_subregions <- aggregate_subregions_
-      data_path <- fit_models_global_parameters_$data_path
-      output_path <- fit_models_global_parameters_$output_path
-      wts <- process_spatial_weights_
-      all_years <- get_all_years_
-      interpolate_values <- interpolate_values_
-      stan_partial_plot <- stan_partial_plot_
-      benthic_models <- fit_models_stan_predict_
-      data_xgboost <- xgboost_data_
-      ## ---- aggregate_subregion_plots
-      data_xgboost <- data_xgboost |>
-        filter(!is.na(subregion), is.na(ecoregion)) |>
-        droplevels() |>
-        mutate(across(c(mean, lower_ci_95, upper_ci_95), function(x) x/100)) |>
-        group_by(region, subregion, ecoregion, category) |>
-        nest(.key = "xgboost")
-      ## combine the stan_data
-      stan_data  <-
-        benthic_models |>
-        ungroup(ecoregion) |>
-        ## group_by(region, subregion, category) |>
-        dplyr::select(region, subregion, category, stan_data) |>
-        ## filter(subregion %in% c("Caribbean 1", "Caribbean 2")) |>
-        summarise(stan_data = list(
-                    reduce(
-                      map(.x = stan_data,
-                          ~ .x[names(.x) %in% c("data_years", "all_years")]),
-                      ~ map2(.x, .y, ~ sort(unique(c(.x, .y)))))))
-
-      benthic_posteriors_subregions <-
-        benthic_posteriors_subregions |>
-        left_join(stan_data, by = c("region", "subregion", "category")) |>
-        left_join(data_xgboost,
-                  by = c("region", "subregion", "category")) |>
-        mutate(name = paste(subregion, category, sep = "_")) |>
-        mutate(plot =
-                 pmap(.l = list(summ, stan_data, name, xgboost),
-                      .f = ~ {
-                        cellmeans <- ..1
-                        stan_data <- ..2
-                        name <- ..3
-                        title <- str_replace_all(name, "_", " ")
-                        ytitle <- str_replace(name, ".*_(.*)", "\\1")
-                        xgboost <- ..4
-                        first_year <- stan_data$all_years[stan_data$data_years[1]]
-                        ## plot without raw points
-                        g1 <- stan_partial_plot(cellmeans, stan_data,
-                                                data = NULL,
-                                                title = title,
-                                                ytitle = ytitle,
-                                                include_raw = FALSE)
-
-                        g1 <- g1 +
-                          theme(panel.grid.major.y = element_line(),
-                                panel.grid.minor.y = element_line(),
-                                panel.grid.major.x = element_line()
-                               )
-                        nm <- paste0(output_path, "figures/subregion_pdp_", "_", ..3, ".png")
-                        ggsave(
-                          filename = nm,
-                          g1,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        nm <- paste0(output_path, "figures/subregion_pdp_", "_", ..3, ".png")
-                        ggsave(
-                          filename = nm,
-                          g1,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        ## Now a version trimmed to minium data year
-                        g1a <- stan_partial_plot(cellmeans, stan_data,
-                                                data = NULL,
-                                                title = title,
-                                                ytitle = ytitle,
-                                                include_raw = FALSE,
-                                                min_year = first_year)
-
-                        g1a <- g1a +
-                          theme(panel.grid.major.y = element_line(),
-                                panel.grid.minor.y = element_line(),
-                                panel.grid.major.x = element_line()
-                               )
-                        nma <- paste0(output_path, "figures/subregion_pdp_a_", "_", ..3, ".png")
-                        ggsave(
-                          filename = nma,
-                          g1a,
-                          width =  6, height =  4, dpi =  72
-                        )
-
-                        nm2 <- paste0(output_path,
-                          "figures/subregion_pdprawxgboost_", "_", ..3, ".png")
-                        nm2a <- paste0(output_path,
-                          "figures/subregion_pdprawxgboost_a_", "_", ..3, ".png")
-                        #print(xgboost)
-                        if (!is.null(xgboost)) {
-                          g2 <- g1 +
-                            geom_ribbon(data = xgboost, inherit.aes = FALSE,
-                                        aes(y = mean, x = year,
-                                            ymin = lower_ci_95, ymax = upper_ci_95),
-                                        color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost, inherit.aes = FALSE,
-                                      aes(y = mean, x = year), colour = "blue")
-                          g2a <- g1a +
-                            geom_ribbon(data = xgboost |> filter(year >= (first_year)) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year,
-                                ymin = lower_ci_95, ymax = upper_ci_95),
-                              color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost |> filter(year >= (first_year)) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year), colour = "blue")
-                        } else {
-                          g2 <- g1
-                          g2a <- g1a
-                        }
-                        ggsave(
-                          filename = nm2,
-                          g2,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        ggsave(
-                          filename = nm2a,
-                          g2a,
-                          width =  6, height =  4, dpi =  72
-                        )
-
-                        nm
-                      }
-                      ))
-      # ----end
-      benthic_posteriors_subregions
+    tar_target(aggregate_subregions_V2_, {
+      benthic_posteriors_V2 <- aggregate_compile_V2_
+      wts <- wts_subregions_
+      summarise_posteriors <- summarise_posteriors_
+      library(data.table)
+      ## ---- aggregate_subregions
+      benthic_posteriors_subregions_V2 <-
+        benthic_posteriors_V2 |>
+        dplyr::select(-data) |>
+        unnest(posteriors) |>
+        left_join(wts |> dplyr::select(region, subregion, ecoregion, wt),
+                  by = c("region", "subregion", "ecoregion")) |>
+        ungroup() |>
+        mutate(value_wt = as.double(value * wt)) 
+      
+      benthic_posteriors_subregions_V2 <-
+        data.table::setDT(benthic_posteriors_subregions_V2)[, .(value =  sum(value_wt)),
+          by = c("region", "subregion", "category", ".draw", "Year")] |>
+        as_tibble() |> 
+        ungroup() |>
+        group_by(region, subregion, category) |>
+        nest(.key = "posteriors") |>
+        ungroup() |> 
+        mutate(cellmeans = list(
+          parallel::mcmapply(FUN = summarise_posteriors,
+            posteriors,
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(cellmeans = cellmeans[[1]]) |>
+        group_by(region, subregion, category)
+      
+      benthic_posteriors_subregions_V2
+      ## ----end
     }
     ),
 
+    ## Aggregate the posteriors for all regions 
     tar_target(wts_regions_, {
       benthic_posteriors_subregions <- aggregate_subregions_
       wts <- process_spatial_weights_
@@ -500,185 +311,76 @@ aggregate_models <- function() {
       ## ----end
     }
     ),
-      
     tar_target(aggregate_regions_, {
       benthic_posteriors_subregions <- aggregate_subregions_
       wts <- wts_regions_
-      library(data.table)
+      summarise_posteriors <- summarise_posteriors_
       ## ---- aggregate_regions
       benthic_posteriors_regions <-
         benthic_posteriors_subregions |>
-        ## filter(region == "Australia", category == "Hard coral") |> droplevels() |> 
-        ## filter(region == "Australia") |> droplevels() |> 
-        dplyr::select(-summ) |>
+        dplyr::select(-cellmeans) |>
         unnest(posteriors) |>
         left_join(wts |> dplyr::select(region, subregion, wt),
                   by = c("region", "subregion")) |>
-        ungroup() |> 
-        mutate(value_wt = as.double(value * wt))
-        
-      benthic_posteriors_regions <- setDT(benthic_posteriors_regions)[, .(value =  sum(value_wt)), by = c("region", "category", ".draw", "Year")] |>
+        ungroup() |>
+        mutate(value_wt = as.double(value * wt)) 
+      
+      benthic_posteriors_regions <-
+        data.table::setDT(benthic_posteriors_regions)[, .(value =  sum(value_wt)),
+          by = c("region", "category", ".draw", "Year")] |>
         as_tibble() |> 
         ungroup() |>
         group_by(region, category) |>
         nest(.key = "posteriors") |>
-        ## group_by(region, category) |>
-        ## nest(.key = "data") |>
-        ## mutate(posteriors = map(.x = data,
-        ##   .f =  ~ {
-        ##     print("here")
-        ##     .x |> group_by(.draw, Year) |>
-        ##       summarise(value = sum(value_wt), .groups = "keep")
-        ##   })) |>
-        ## dplyr::select(-data) |> 
-        ## ## unnest("values") |> 
-        ## ## group_by(region, category, .draw, Year) |>
-        ## ## summarise(value = sum(value_wt, na.rm = TRUE)) |>
-        ## ## ungroup() |>
-        ## ## group_by(region, category) |>
-        ## ## nest(.key = "posteriors") |>
-        mutate(summ = map(.x = posteriors,
-                          .f =  ~ {
-                            .x |>
-                              group_by(Year) |>
-                              posterior::summarise_draws(
-                                           median,
-                                           HDInterval::hdi,
-                                           ~ HDInterval::hdi(.x, credMass = c(0.8))
-                                         ) |>
-                              rename(lower_80 = V4, upper_80 = V5)
-                            }
-                          ))
+        ungroup() |> 
+        mutate(cellmeans = list(
+          parallel::mcmapply(FUN = summarise_posteriors,
+            posteriors,
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(cellmeans = cellmeans[[1]]) |>
+        group_by(region, category)
+      
       benthic_posteriors_regions
       ## ----end
     }
     ),
-
-    tar_target(aggregate_region_plots_, {
-      benthic_posteriors_regions <- aggregate_regions_
-      data_path <- fit_models_global_parameters_$data_path
-      output_path <- fit_models_global_parameters_$output_path
-      wts <- process_spatial_weights_
-      all_years <- get_all_years_
-      interpolate_values <- interpolate_values_
-      stan_partial_plot <- stan_partial_plot_
-      benthic_models <- fit_models_stan_predict_
-      data_xgboost <- xgboost_data_
-      ## ---- aggregate_region_plots
-      data_xgboost <- data_xgboost |>
-        filter(!is.na(region), is.na(subregion)) |>
-        droplevels() |>
-        mutate(across(c(mean, lower_ci_95, upper_ci_95), function(x) x/100)) |>
+    tar_target(aggregate_regions_V2_, {
+      benthic_posteriors_subregions_V2 <- aggregate_subregions_V2_
+      wts <- wts_regions_
+      summarise_posteriors <- summarise_posteriors_
+      ## ---- aggregate_regions V2
+      benthic_posteriors_regions_V2 <-
+        benthic_posteriors_subregions_V2 |>
+        dplyr::select(-cellmeans) |>
+        unnest(posteriors) |>
+        left_join(wts |> dplyr::select(region, subregion, wt),
+                  by = c("region", "subregion")) |>
+        ungroup() |>
+        mutate(value_wt = as.double(value * wt)) 
+      
+      benthic_posteriors_regions_V2 <-
+        data.table::setDT(benthic_posteriors_regions_V2)[, .(value =  sum(value_wt)),
+          by = c("region", "category", ".draw", "Year")] |>
+        as_tibble() |> 
+        ungroup() |>
         group_by(region, category) |>
-        nest(.key = "xgboost")
-      ## combine the stan_data
-      stan_data  <-
-        benthic_models |>
-        ungroup(subregion, ecoregion) |>
-        dplyr::select(region, category, stan_data) |>
-        ## filter(subregion %in% c("Caribbean 1", "Caribbean 2")) |>
-        summarise(stan_data = list(
-                    reduce(
-                      map(.x = stan_data,
-                          ~ .x[names(.x) %in% c("data_years", "all_years")]),
-                      ~ map2(.x, .y, ~ sort(unique(c(.x, .y)))))))
-
-      benthic_posteriors_regions <-
-        benthic_posteriors_regions |>
-        left_join(stan_data, by = c("region", "category")) |>
-        left_join(data_xgboost,
-                  by = c("region", "category")) |>
-        mutate(name = paste(region, category, sep = "_")) |>
-        ## filter(region == "Australia", category == "Hard coral") |> droplevels() |> 
-        mutate(plot =
-                 pmap(.l = list(summ, stan_data, name, xgboost),
-                      .f = ~ {
-                        cellmeans <- ..1
-                        stan_data <- ..2
-                        title <- str_replace_all(..3, "_", " ")
-                        ytitle <- str_replace(..3, ".*_(.*)", "\\1")
-                        xgboost <- ..4
-                        first_year <- stan_data$all_years[stan_data$data_years[1]]
-                        ## plot without raw points
-                        g1 <- stan_partial_plot(cellmeans, stan_data,
-                                                data = NULL,
-                                                title = title,
-                                                ytitle = ytitle,
-                                                include_raw = FALSE)
-                        g1 <- g1 +
-                          theme(panel.grid.major.y = element_line(),
-                                panel.grid.minor.y = element_line(),
-                                panel.grid.major.x = element_line()
-                               )
-                        nm <- paste0(output_path, "figures/region_pdp_", "_", ..3, ".png")
-                        ggsave(
-                          filename = nm,
-                          g1,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        ## Now a version trimmed to minium data year
-                        g1a <- stan_partial_plot(cellmeans, stan_data,
-                          data = NULL,
-                          title = title,
-                          ytitle = ytitle,
-                          include_raw = FALSE,
-                          min_year = first_year)
-                        g1a <- g1a +
-                          theme(panel.grid.major.y = element_line(),
-                                panel.grid.minor.y = element_line(),
-                                panel.grid.major.x = element_line()
-                               )
-                        nma <- paste0(output_path, "figures/region_pdp_a_", "_", ..3, ".png")
-                        ggsave(
-                          filename = nma,
-                          g1a,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        nm2 <- paste0(output_path,
-                          "figures/region_pdprawxgboost_", "_", ..3, ".png")
-                        nm2a <- paste0(output_path,
-                          "figures/region_pdprawxgboost_a_", "_", ..3, ".png")
-                        if (!is.null(xgboost)) {
-                          g2 <- g1 +
-                            geom_ribbon(data = xgboost, inherit.aes = FALSE,
-                              aes(y = mean, x = year,
-                                ymin = lower_ci_95, ymax = upper_ci_95),
-                              color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost, inherit.aes = FALSE,
-                              aes(y = mean, x = year), colour = "blue")
-                          g2a <- g1a +
-                            geom_ribbon(data = xgboost |> filter(year >= (first_year)) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year,
-                                ymin = lower_ci_95, ymax = upper_ci_95),
-                              color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost |> filter(year >= (first_year)) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year), colour = "blue")
-                        } else {
-                          g2 <- g1
-                          g2a <- g1a
-                        }
-                        ggsave(
-                          filename = nm2,
-                          g2,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        ggsave(
-                          filename = nm2a,
-                          g2a,
-                          width =  6, height =  4, dpi =  72
-                        )
-
-                        nm
-                      }
-                      ))
-      # ----end
-      benthic_posteriors_regions
+        nest(.key = "posteriors") |>
+        ungroup() |> 
+        mutate(cellmeans = list(
+          parallel::mcmapply(FUN = summarise_posteriors,
+            posteriors,
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(cellmeans = cellmeans[[1]]) |>
+        group_by(region, category)
+      
+      benthic_posteriors_regions_V2
+      ## ----end
     }
     ),
 
-    
+    ## Aggregate the posteriors for the globe 
     tar_target(wts_global_, {
       benthic_posteriors_regions <- aggregate_regions_
       wts <- process_spatial_weights_
@@ -702,165 +404,116 @@ aggregate_models <- function() {
       ## ----end
     }
     ),
-      
     tar_target(aggregate_global_, {
       benthic_posteriors_regions <- aggregate_regions_
       wts <- wts_global_
+      summarise_posteriors <- summarise_posteriors_
       library(data.table)
       ## ---- aggregate_global
+      print("Aggregate global")
       benthic_posteriors_global <-
         benthic_posteriors_regions |>
-        dplyr::select(-summ) |>
+        dplyr::select(-cellmeans) |>
         unnest(posteriors) |>
         left_join(wts |> dplyr::select(region, wt),
                   by = c("region")) |>
-        ungroup() |> 
-        mutate(value_wt = as.double(value * wt))
-        
-      benthic_posteriors_global <- setDT(benthic_posteriors_global)[, .(value =  sum(value_wt)), by = c("category", ".draw", "Year")] |>
+        ungroup() |>
+        mutate(value_wt = as.double(value * wt)) 
+      
+      benthic_posteriors_global <-
+        data.table::setDT(benthic_posteriors_global)[, .(value =  sum(value_wt)),
+          by = c("category", ".draw", "Year")] |>
         as_tibble() |> 
         ungroup() |>
         group_by(category) |>
         nest(.key = "posteriors") |>
-        mutate(summ = map(.x = posteriors,
-                          .f =  ~ {
-                            .x |>
-                              group_by(Year) |>
-                              posterior::summarise_draws(
-                                           median,
-                                           HDInterval::hdi,
-                                           ~ HDInterval::hdi(.x, credMass = c(0.8))
-                                         ) |>
-                              rename(lower_80 = V4, upper_80 = V5)
-                            }
-                          ))
+        ungroup() |> 
+        mutate(cellmeans = list(
+          parallel::mcmapply(FUN = summarise_posteriors,
+            posteriors,
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(cellmeans = cellmeans[[1]]) |>
+        group_by(category)
+      
       benthic_posteriors_global
       ## ----end
     }
     ),
-
-    tar_target(aggregate_global_plots_, {
-      benthic_posteriors_global <- aggregate_global_
-      data_path <- fit_models_global_parameters_$data_path
-      output_path <- fit_models_global_parameters_$output_path
-      wts <- process_spatial_weights_
-      all_years <- get_all_years_
-      interpolate_values <- interpolate_values_
-      stan_partial_plot <- stan_partial_plot_
-      benthic_models <- fit_models_stan_predict_
-      data_xgboost <- xgboost_data_
-      ## ---- aggregate_global_plots
-      data_xgboost <- data_xgboost |>
-        filter(is.na(region), is.na(subregion), is.na(ecoregion)) |>
-        droplevels() |>
-        mutate(across(c(mean, lower_ci_95, upper_ci_95), function(x) x/100)) |>
+    tar_target(aggregate_global_V2_, {
+      benthic_posteriors_regions_V2 <- aggregate_regions_V2_
+      wts <- wts_global_
+      summarise_posteriors <- summarise_posteriors_
+      ## ---- aggregate_global V2
+      print("Aggregate global V2")
+      benthic_posteriors_global_V2 <-
+        benthic_posteriors_regions_V2 |>
+        dplyr::select(-cellmeans) |>
+        unnest(posteriors) |>
+        left_join(wts |> dplyr::select(region, wt),
+                  by = c("region")) |>
+        ungroup() |>
+        mutate(value_wt = as.double(value * wt)) 
+      
+      benthic_posteriors_global_V2 <-
+        data.table::setDT(benthic_posteriors_global_V2)[, .(value =  sum(value_wt)),
+          by = c("category", ".draw", "Year")] |>
+        as_tibble() |> 
+        ungroup() |>
         group_by(category) |>
-        nest(.key = "xgboost")
-      ## combine the stan_data
-      stan_data  <-
-        benthic_models |>
-        ungroup(region, subregion, ecoregion) |>
-        dplyr::select(category, stan_data) |>
-        ## filter(subregion %in% c("Caribbean 1", "Caribbean 2")) |>
-        summarise(stan_data = list(
-                    reduce(
-                      map(.x = stan_data,
-                          ~ .x[names(.x) %in% c("data_years", "all_years")]),
-                      ~ map2(.x, .y, ~ sort(unique(c(.x, .y)))))))
-
-      benthic_posteriors_global <-
-        benthic_posteriors_global |>
-        left_join(stan_data, by = c("category")) |>
-        left_join(data_xgboost,
-                  by = c("category")) |>
-        mutate(name = paste(category, sep = "_")) |>
-        mutate(plot =
-                 pmap(.l = list(summ, stan_data, name, xgboost),
-                      .f = ~ {
-                        cellmeans <- ..1
-                        stan_data <- ..2
-                        title <- str_replace_all(..3, "_", " ")
-                        ytitle <- str_replace(..3, ".*_(.*)", "\\1")
-                        xgboost <- ..4
-                        first_year <- stan_data$all_years[stan_data$data_years[1]]
-                        ## plot without raw points
-                        g1 <- stan_partial_plot(cellmeans, stan_data,
-                                                data = NULL,
-                                                title = title,
-                                                ytitle = ytitle,
-                                                include_raw = FALSE)
-                        g1 <- g1 +
-                          theme(panel.grid.major.y = element_line(),
-                                panel.grid.minor.y = element_line(),
-                                panel.grid.major.x = element_line()
-                               )
-                        nm <- paste0(output_path, "figures/global_pdp_", "_", ..3, ".png")
-                        ggsave(
-                          filename = nm,
-                          g1,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        ## Now a version trimmed to minium data year
-                        g1a <- stan_partial_plot(cellmeans, stan_data,
-                          data = NULL,
-                          title = title,
-                          ytitle = ytitle,
-                          include_raw = FALSE,
-                          min_year = first_year)
-                        g1a <- g1a +
-                          theme(panel.grid.major.y = element_line(),
-                                panel.grid.minor.y = element_line(),
-                                panel.grid.major.x = element_line()
-                               )
-                        nma <- paste0(output_path, "figures/global_pdp_a_", "_", ..3, ".png")
-                        ggsave(
-                          filename = nma,
-                          g1a,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        nm2 <- paste0(output_path,
-                          "figures/global_pdprawxgboost_", "_", ..3, ".png")
-                        nm2a <- paste0(output_path,
-                          "figures/global_pdprawxgboost_a_", "_", ..3, ".png")
-                        if (!is.null(xgboost)) {
-                          g2 <- g1 +
-                            geom_ribbon(data = xgboost, inherit.aes = FALSE,
-                              aes(y = mean, x = year,
-                                ymin = lower_ci_95, ymax = upper_ci_95),
-                              color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost, inherit.aes = FALSE,
-                              aes(y = mean, x = year), colour = "blue")
-                          g2a <- g1a +
-                            geom_ribbon(data = xgboost |> filter(year >= (first_year)) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year,
-                                ymin = lower_ci_95, ymax = upper_ci_95),
-                              color = NA, fill = "blue", alpha = 0.5) +
-                            geom_line(data = xgboost |> filter(year >= (first_year)) |> droplevels(),
-                              inherit.aes = FALSE,
-                              aes(y = mean, x = year), colour = "blue")
-                        } else {
-                          g2 <- g1
-                          g2a <- g1a
-                        }
-                        ggsave(
-                          filename = nm2,
-                          g2,
-                          width =  6, height =  4, dpi =  72
-                        )
-                        ggsave(
-                          filename = nm2a,
-                          g2a,
-                          width =  6, height =  4, dpi =  72
-                        )
-
-                        nm
-                      }
-                      ))
-      # ----end
-      benthic_posteriors_global
+        nest(.key = "posteriors") |>
+        ungroup() |> 
+        mutate(cellmeans = list(
+          parallel::mcmapply(FUN = summarise_posteriors,
+            posteriors,
+            mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |> 
+        mutate(cellmeans = cellmeans[[1]]) |>
+        group_by(category)
+      
+      benthic_posteriors_global_V2
+      ## ----end
     }
-    )#,
+    ),
+
+    ## Contrasts
+    tar_target(contrasts_global_, {
+      benthic_posteriors_global <- aggregate_global_V2_
+      ## ---- contrasts_global
+      yrs <- benthic_posteriors_global$cellmeans[[1]]$Year
+      a <- rep(0, len = length(yrs))
+      a[which(yrs %in% c(2015, 2017))] <- c(1, -1)
+      a
+
+      
+      contrasts_global <- benthic_posteriors_global |>
+        mutate(contrast = map(.x = posteriors,
+          .f = ~ {
+            .x |> filter(Year %in% c(2015, 2017)) |>
+              droplevels() |>
+              group_by(.draw) |>
+              summarise(value = diff(value * 100)) |>
+              mutate(contrast = "2014 vs 2016")
+          })) |>
+        mutate(contrast_sum = map(.x = contrast,
+          .f =  ~ {
+           .x |>
+             group_by(contrast) |> 
+             posterior::summarise_draws(
+               median,
+               HDInterval::hdi,
+               ~ HDInterval::hdi(.x, credMass = c(0.8)),
+               Pl = ~ mean(.x < 0),
+               Pg = ~ mean(.x > 0)
+             ) |>
+             rename(lower_80 = V4, upper_80 = V5)
+          }
+          ))
+      ## ----end
+    }
+    )
+    
 
   )
 }
+

@@ -40,32 +40,117 @@ process_benthic_data <- function() {
     
     ## Import data ====================================================
     ## Benthic data ---------------------------------------------------
+    tar_target(benthic_data_file_, {
+      primary_path <- spatial_global_parameters_$primary_path
+      ## ---- benthic data file
+      benthic_data_file <- paste0(
+        primary_path,
+        "data_benthic_murray.RData"
+      )
+      ## ----end
+      benthic_data_file
+    },
+    format = "file"
+    ),
     tar_target(read_benthic_data_, {
       primary_path <- spatial_global_parameters_$primary_path
+      benthic_data_file <- benthic_data_file_
       ## ---- read benthic data
-      benthic_data <- get(load(file = paste0(
-        primary_path,
-        "data_benthic_prepared_murray.RData"
-      )))
+      benthic_data <- get(load(file = benthic_data_file)) 
       ## ----end
       benthic_data
     }),
+
     ## Benthic prediction data ----------------------------------------
-    tar_target(read_benthic_prediction_data_, {
-      primary_path <- spatial_global_parameters_$primary_path
-      ## ---- read benthic prediction data
-      benthic_pred <- get(load(file = paste0(
-        primary_path,
-        "data_predictors_pred_murray.RData"
-      )))
-      ## ----end
-      benthic_pred
-    }),
+    ## tar_target(read_benthic_prediction_data_, {
+    ##   primary_path <- spatial_global_parameters_$primary_path
+    ##   ## ---- read benthic prediction data
+    ##   benthic_pred <- get(load(file = paste0(
+    ##     primary_path,
+    ##     "data_predictors_pred_murray.RData"
+    ##   )))
+    ##   ## ----end
+    ##   benthic_pred
+    ## }),
 
     ## Process data ===================================================
-    ## Process benthic data (Part 1. add ecoregions) ------------------
-    tar_target(process_benthic_data_1_, {
+    ## Process benthic data (adjust PERSGA) ---------------------------
+    tar_target(process_benthic_data_adjust_PERSGA_, {
       benthic_data <- read_benthic_data_
+      ## ---- process benthic data adjust PERSGA 
+      benthic_data <- benthic_data |> 
+        mutate(ecoregion = ifelse(subregion == "PERSGA 1", "Northern Red Sea",
+          ifelse(subregion == "PERSGA 2", "Central Red Sea",
+            as.character(ecoregion)))) |>
+        mutate(ecoregion = factor(ecoregion))
+      ## ----end
+      benthic_data
+    }),
+
+    ## Process benthic data (adjust GBR) ------------------------------
+    tar_target(process_benthic_data_adjust_GBR_, {
+      benthic_data <- process_benthic_data_adjust_PERSGA_
+      ## ---- process benthic data adjust GBR 
+      benthic_data <-
+        benthic_data |>
+        filter(!(ecoregion == "Central and Southern Great Barrier Reef" & year < 1993)) |>
+        droplevels()
+      ## ----end
+      benthic_data
+    }),
+
+    ## Process benthic data (aggregate transect) ------------------------------
+    tar_target(process_benthic_data_aggregate_transect_, {
+      benthic_data <- process_benthic_data_adjust_GBR_
+      ## ---- process benthic data aggregate transect 
+      benthic_data <- 
+        benthic_data |> 
+        group_by(region, subregion, ecoregion, 
+          decimalLatitude, decimalLongitude, 
+          parentEventID, datasetID, year, category) |>
+        summarise(measurementValue = mean(measurementValue, na.rm = TRUE),
+          .groups = "keep") 
+      ## ----end
+      benthic_data
+    }),
+
+    ## Process benthic data (fill in missing zeros) ------------------
+    tar_target(process_benthic_data_fill_zeros_, {
+      benthic_data <- process_benthic_data_aggregate_transect_
+      ## ---- process benthic data fill zeros
+      ## Determine which datasetID are ineligable for zero replacement
+      ## - those datasetsID's that never observed the category
+       ineligable_datasets <- 
+        benthic_data |>
+        ungroup() |> 
+        group_by(datasetID) |>
+        complete(category, fill = list(value = NA)) |> 
+        group_by(category, .add = TRUE) |> 
+        summarise(value = sum(measurementValue), .groups = "keep") |> 
+        filter(is.na(value)) |>
+        dplyr::select(-value)
+
+      ## Fill all missing zeros
+      filled <-
+        benthic_data |> 
+        pivot_wider(names_from = "category",
+          values_from = "measurementValue",
+          values_fill = 0) |>
+        pivot_longer(cols = c("Algae", "Macroalgae", `Hard coral`,
+          `Other fauna`, `Coralline algae`, `Turf algae`),
+          names_to = "category", values_to = "measurementValue") |>
+        ungroup()
+
+      ## Remove the ineligable cases
+      benthic_data <- filled |>
+        anti_join(ineligable_datasets, by = join_by(datasetID, category))
+      ## ----end
+      benthic_data
+    }),
+
+    ## Process benthic data (Part 1. add ecoregions) -------------------
+    tar_target(process_benthic_data_1_, {
+      benthic_data <- process_benthic_data_fill_zeros_
       ecoregions <- process_ecoregions_
       grid_reef <- process_grid_reef_
       ## ---- process benthic data Part 1. add ecoregions
@@ -102,7 +187,11 @@ process_benthic_data <- function() {
         st_drop_geometry() |> 
         mutate(
           grid_id = factor(grid_id),
-          Site =  factor(paste0(decimalLatitude, decimalLongitude, sep =  "_")),
+          ## Site =  factor(paste0(decimalLatitude, decimalLongitude, sep =  "_")),
+          Site =  factor(paste0(
+            round(decimalLatitude, 3),
+            round(decimalLongitude, 3),
+            sep =  "_")),
           Transect =  factor(paste0(Site, parentEventID, sep =  "_")),
           datasetID =  factor(datasetID),
           fyear =  factor(year),
