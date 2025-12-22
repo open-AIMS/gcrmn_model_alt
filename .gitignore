@@ -6,6 +6,7 @@ data/*.rds
 *.log
 *.sif
 *.html
+*.docx
 *.swp
 *#
 *~
@@ -13,5 +14,7 @@ R/_targets/
 R/*.png
 R/*.rds
 R/*.stan
+R/*.pdf
+docs/methods.qmd
 output/
 data/primary

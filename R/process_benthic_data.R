@@ -45,7 +45,7 @@ process_benthic_data <- function() {
       ## ---- benthic data file
       benthic_data_file <- paste0(
         primary_path,
-        "data_benthic_murray.RData"
+        "data_benthic_prepared.RData"
       )
       ## ----end
       benthic_data_file

@@ -988,13 +988,13 @@ where:
      y=D_y, \sim N(\mathbf{y}_{y-1}, \sigma_y)\\
      y=G_{ys}, \sim N((\beta_{y-1} + \mathbf{y}_{y+1})/2, 0.1)\\
      y=G_{y}, \sim N((\mathbf{y}_{y-1} + \mathbf{y}_{y+1})/2, 0.1)\\
-     y=G_{ye}, \sim N((\mathbf{y]_{y-1} + \beta_{y+1})/2, 0.1)\\
+     y=G_{ye}, \sim N((\mathbf{y}_{y-1} + \beta_{y+1})/2, 0.1)\\
      y=F_y, \sim N(\beta_{y+1}, 0.1)\\
      y>F_y, \sim N(\mathbf{y}_{y+1}, 0.1)
   \end{cases}\\
   \mathbf{\gamma_d} & \sim N(0, 0.1)\\
 \end{align}
-
+ 
 where: 
 
 - $\mathbf{Y}$ is a vector of the cover of the benthic group

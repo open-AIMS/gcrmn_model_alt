@@ -228,6 +228,7 @@ wts_subregions <- targets::tar_read("wts_subregions_", store = "../R/_targets")
 wts_regions <- targets::tar_read("wts_regions_", store = "../R/_targets") 
 summary_subregion <- targets::tar_read("summary_subregion_", store = "../R/_targets")
 summary_subregion_V2 <- targets::tar_read("summary_subregion_V2_", store = "../R/_targets")
+contrasts_subregions <- targets::tar_read("contrasts_subregions_", store = "../R/_targets")
 ```
 
 ```{r}
@@ -240,8 +241,9 @@ summary_subregion_V2 <- targets::tar_read("summary_subregion_V2_", store = "../R
 benthic_posteriors_regions <- targets::tar_read("aggregate_region_plots_", store = "../R/_targets")
 summary_region <- targets::tar_read("summary_region_", store = "../R/_targets")
 summary_region_V2 <- targets::tar_read("summary_region_V2_", store = "../R/_targets")
+contrasts_regions <- targets::tar_read("contrasts_regions_", store = "../R/_targets")
 ```
-
+ 
 ```{r}
 #| label: aggregate ecoregion plots
 #| eval: true
@@ -498,6 +500,22 @@ for (catg in cats) {
       knitr::kable(caption = paste0("Estimated annual ", catg, " cover (%) at the subregion scale.")) |>
       print()
     cat(":::\n")
+    cat("::: {.callout-note collapse=true}\n")
+    cat("#### Show contrasts\n")
+    contrasts_subregions |>
+      filter(category == catg, region == reg, subregion == subreg) |>
+      _[["contrast_sum"]][[1]] |>
+      knitr::kable(caption = paste0("Contrasts between pairs of years for ", catg, " cover (%) at the subregion scale.
+      For each contrast, results are expressed as absolute change (`abs`) and percentage change (`frac`).   Negative values indicate declines between the pairs of years.  `Pl` and `Pg`
+      represent the probability of decline and increase respectively.")) |>
+      print()
+    cat(paste0("- ", 
+      contrasts_subregions |>
+        filter(category == catg, region == reg, subregion == subreg) |>
+        _[["narrative"]][[1]]$interpretation, sep="\n\n")
+      )
+      
+    cat(":::\n")
   }
   cat(":::\n")
 
@@ -548,6 +566,21 @@ for (catg in cats) {
       dplyr::mutate(across(c(median, lower, upper, lower_80, upper_80), \(x) round(x * 100, 2))) |>
       knitr::kable(caption = paste0("Estimated annual ", catg, " cover (%) at the region scale.")) |>
       print()
+    cat(":::\n")
+    cat("::: {.callout-note collapse=true}\n")
+    cat("#### Show contrasts\n")
+    contrasts_regions |>
+      filter(category == catg, region == reg) |>
+      _[["contrast_sum"]][[1]] |>
+      knitr::kable(caption = paste0("Contrasts between pairs of years for ", catg, " cover (%) at the region scale.
+      For each contrast, results are expressed as absolute change (`abs`) and percentage change (`frac`).  Negative values indicate declines between the pairs of years. `Pl` and `Pg`
+      represent the probability of decline and increase respectively.")) |>
+      print()
+    cat(paste0("- ", 
+      contrasts_regions |>
+        filter(category == catg, region == reg) |>
+        _[["narrative"]][[1]]$interpretation, sep="\n\n")
+      )
     cat(":::\n")
 }
 ```

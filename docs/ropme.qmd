@@ -140,6 +140,68 @@ In each of the following sections:
   appears for spans of years for which there were no observations
   across all the consistuent spatial units.
 
+Within the Ecoregion level, each Ecoregion tab, comprises the following
+tabs:
+
+::: {.panel-tabset}
+
+#### Modelled trends
+
+Within Ecoregions, temporal (Modelled) trends are represented by four figures:
+
+- left hand figure: Bayesian Hierachical (orange) and xgboost (blue)
+  estimates for the temporal domain of the observed data for that
+  Ecoregion overlayed onto observed data
+
+- right hand figure: Bayesian Hierachical (orange) and xgboost (blue)
+  estimates for the temporal domain of the observed data for that
+  Ecoregion
+
+#### Simple mean/median trends
+
+To assist in the evaluation of the models, we have also calculated two
+forms of simple summary statistics:
+
+- Simple means/medians represent the means and medians of all
+  available observations in the ecoregion per year
+
+- Hierarchical means and medians of the available observed data are
+calculated as averages of averages (etc) starting at the
+level of Dataset/Replicates/Years -> Dataset/Site/Years -> Dataset/Grid/Years -> Dataset/Years -> Years.
+
+These two alternatives can yield very different estimates.  This
+hierachical averaging takes partial account for differences in
+Datasets and spatial units.
+
+That said, neither method are as good as statistical models for
+representing population trends as they implicitly makes very specific
+and arguably unjustified assumptions about the distribution of data
+(gaussian) and fail to capture the repeated measurement nature of much
+monitoring data.  Also note, that if the locations and methods change
+between years, then so too can the sample bias and this results in
+inconsistent estimates between years.
+
+Also note, that unlike the models, the simple and hierarchical
+means/medians are not weighted by reef area and are instead going to
+be heavily driven by sample sizes.
+
+#### Data conditional on Dataset ID
+
+In this section we have produced simple exploratory plots conditioned
+on DatasetID so as to get a feel for the temporal distribution of each
+dataset.  The smooth trends are simple splines.
+
+#### Data conditional on grid id
+
+In this section we have produced simple exploratory plots conditioned
+on grid_id (broad location) so as to get a feel for the temporal
+distribution of each location.  The smooth trends are simple splines.
+
+:::
+
+
+
+
 ```{r}
 #| label: read aggregate ecoregion plots
 #| eval: true
@@ -164,6 +226,9 @@ wts <- targets::tar_read("process_spatial_weights_", store = "../R/_targets") |>
   )
 wts_subregions <- targets::tar_read("wts_subregions_", store = "../R/_targets") 
 wts_regions <- targets::tar_read("wts_regions_", store = "../R/_targets") 
+summary_subregion <- targets::tar_read("summary_subregion_", store = "../R/_targets")
+summary_subregion_V2 <- targets::tar_read("summary_subregion_V2_", store = "../R/_targets")
+contrasts_subregions <- targets::tar_read("contrasts_subregions_", store = "../R/_targets")
 ```
 
 ```{r}
@@ -174,8 +239,11 @@ wts_regions <- targets::tar_read("wts_regions_", store = "../R/_targets")
 #| message: false
 #| cache: false
 benthic_posteriors_regions <- targets::tar_read("aggregate_region_plots_", store = "../R/_targets")
+summary_region <- targets::tar_read("summary_region_", store = "../R/_targets")
+summary_region_V2 <- targets::tar_read("summary_region_V2_", store = "../R/_targets")
+contrasts_regions <- targets::tar_read("contrasts_regions_", store = "../R/_targets")
 ```
-
+ 
 ```{r}
 #| label: aggregate ecoregion plots
 #| eval: true
@@ -187,6 +255,7 @@ benthic_posteriors_regions <- targets::tar_read("aggregate_region_plots_", store
 ## cat("::: {.panel-tabset}\n")
 reg <- "ROPME"
 dat_reg <- benthic_posteriors_ecoregions |>
+## dat_reg <- summary_region |>
  dplyr::filter(region == reg)
 ##cat("::: {.panel-tabset}\n")
 cats <- sort(unique(dat_reg$category))
@@ -212,17 +281,158 @@ for (catg in cats) {
       cat(paste0("###### ", eco, "\n"))
       dat_eco <- dat_subreg|>
         dplyr::filter(ecoregion == eco)
+      cat("::: {.panel-tabset}\n")
+             
+      cat(paste0("######## Modelled trends\n"))
       fig <- dat_eco$plot[[1]]
       fig2 <- str_replace(fig, "pdp", "pdpraw")
       fig1a <- str_replace(fig, "pdp", "pdp_a")
+      fig1a_V2 <- str_replace(fig, "pdp", "pdp_a_V2")
       fig3 <- str_replace(fig, "pdp", "pdprawxgboost")
       fig3a <- str_replace(fig, "pdp", "pdprawxgboost_a")
-      cat(paste0(#"![](", fig2, "){width=300px}",
-                 "![](", fig, "){width=300px}",
-                 "![](", fig3, "){width=300px}\n",
-                 "![](", fig1a, "){width=300px}",
-                 "![](", fig3a, "){width=300px}\n\n"
-                 ))
+      fig3a_V2 <- str_replace(fig, "pdp", "pdprawxgboost_a_V2")
+      fig4a_V2 <- str_replace(fig, "pdp", "pdpraw_a_V2")
+      fig5a_V2 <- str_replace(fig, "pdp", "pdp_bayes_a_V2")
+      ## cat(paste0(#"![](", fig2, "){width=300px}",
+      ##            ## "![](", fig, "){width=300px}",
+      ##            ## "![](", fig3, "){width=300px}\n",
+      ##            ## "![](", fig1a, "){width=300px}",
+      ##            ## "![](", fig3a, "){width=300px}\n\n"
+      ##            ## "![](", fig1a_V2, "){width=400px}",
+      ##            ## "![](", fig3a_V2, "){width=400px}\n\n"
+      ##            "![](", fig4a_V2, "){width=400px}",
+      ##            "![](", fig5a_V2, "){width=400px}\n\n"
+      ##            ))
+     
+       cat('::: {layout="[ 0.49, -0.01, 0.49 ]"}\n\n')
+       cat(":::: {.figure #fig-x}\n")
+       cat(paste0("![](", fig4a_V2,"){width=400px}\n\n"))
+       cat(paste0("Modelled temporal trend (orange
+       ribbon with white line) in ", catg , " with overlayed observed data
+       (dots) for the ", eco, " GCRMN ecoregion.  The orange bands represent
+       80% and 95% (darker) credibility intervals.  Grey ribbon represents 
+       years for which there are no observed data. Thin grey lines join sampling units that 
+       are repeatedly measured over time.\n"))
+       cat("::::\n\n")
+       cat(":::: {.figure #fig-x}\n")
+       cat(paste0("![](", fig5a_V2,"){width=400px}\n\n"))
+       cat(paste0("Modelled temporal trend (orange
+       ribbon with white line) in ", catg , " for the ", eco, " GCRMN 
+       ecoregion.  The orange bands represent 80% and 95% (darker) 
+       credibility intervals.  Grey ribbon represents years for which 
+       there are no observed data.\n"))
+       cat("::::\n\n")
+       cat(":::\n\n")
+
+      cat(paste0("######## Simple mean/median trends\n"))
+        fig5a <- str_replace(fig, "pdp", "raw_pdp_simple") |>
+                 str_replace("figures/ecoregion/ecoregion_", "figures/raw/")
+        fig6 <- str_replace(fig, "pdp", "pdprawxgboost_a_simple")
+        ## fig6a_V2 <- str_replace(fig, "pdp", "pdprawxgboost_a_simple_V2")
+        fig6a_V2 <- str_replace(fig, "pdp", "pdpraw_bayes_a_simple_V2")
+        fig7 <- str_replace(fig, "pdp", "pdp_a_simple")
+        fig7a_V2 <- str_replace(fig, "pdp", "pdp_bayes_a_simple_V2")
+        cat("In each of the following figures, the salmon colored line/points represent the simple hierarchical **means**, the teal coloured line/dots represent the hierarchical **medians**.  The left column of figures displays the Bayesian Hierachical smoothed estimates and the right column displays the unsmoothed estimates.\n\n")
+        ## cat(paste0(
+        ##   ## "![](", fig7, "){width=400px}",
+        ##   "![](", fig7a, "){width=400px}\n",
+        ##   ## "![](", fig6, "){width=400px}",
+        ##   "![](", fig6a, "){width=400px}\n",
+        ##   "![](", fig5a, "){width=400px}\n\n"))
+
+       cat('::: {layout="[ 0.49, -0.01, 0.49 ]"}\n\n')
+
+       cat(":::: {.figure #fig-x}\n")
+       cat(paste0("![](", fig7a_V2,"){width=400px}\n\n"))
+       cat(paste0("Modelled temporal trend (Bayesian Hierarchical model: orange
+       ribbon with white line) and simple and hierarhical summaries (colored dots and lines)
+       in ", catg , " for the ", eco, " GCRMN 
+       ecoregion.  The orange bands represent 80% and 95% (darker) 
+       credibility intervals.  Grey ribbon represents years for which 
+       there are no observed data.  Thin grey lines join sampling units that 
+       are repeatedly measured over time.\n"))
+       cat("::::\n\n")
+
+       cat(":::: {.figure #fig-x}\n")
+       cat(paste0("![](", fig6a_V2,"){width=400px}\n\n"))
+       cat(paste0("Modelled temporal trend (Bayesian Hierarchical model: orange
+       ribbon with white line), simple and hierarhical summaries (colored dots and lines) 
+       and observed data (grey/black dots) in ", catg , " for the ", eco, " GCRMN 
+       ecoregion.  The orange bands represent 80% and 95% (darker) 
+       credibility intervals.  Grey ribbon represents years for which 
+       there are no observed data. Thin grey lines join sampling units that 
+       are repeatedly measured over time.\n"))
+       cat("::::\n\n")
+
+       cat(":::\n\n")
+
+
+       cat('::: {layout="[ 0.49, -0.01, 0.49 ]"}\n\n')
+       cat(":::: {.figure #fig-x}\n")
+       cat(paste0("![](", fig5a,"){width=400px}\n\n"))
+       cat(paste0("Simple and hierarchical summaries (mean and median) and observed 
+       data (dots) in ", catg , " for the ", eco, " GCRMN 
+       ecoregion.  Thin grey lines join sampling units that 
+       are repeatedly measured over time.\n"))
+       cat("::::\n\n")
+       cat(":::\n\n")
+
+      cat(paste0("######## Data conditional on dataset ID\n"))
+      fig6a <- str_replace(fig, "pdp", "raw_pdp_datasetID") |>
+               str_replace("figures/ecoregion/ecoregion_", "figures/raw/")
+      cat("The salmon colored line/points represent the simple hierarchical **means**, the teal coloured line/dots represent the hierarchical **medians**\n\n")
+      ## cat(paste0(
+      ##   "![](", fig1a_V2, "){width=400px}\n",
+      ##   "![](", fig6a, "){width=700px}\n\n"))
+
+       cat('::: {layout="[ 0.49, -0.01, 0.49 ]"}\n\n')
+       cat(":::: {.figure #fig-x}\n")
+       cat(paste0("![](", fig4a_V2,"){width=400px}\n\n"))
+       cat(paste0("Modelled temporal trend (orange
+       ribbon with white line) in ", catg , " with overlayed observed data
+       (dots) for the ", eco, " GCRMN ecoregion.  The orange bands represent
+       80% and 95% (darker) credibility intervals.  Grey ribbon represents 
+       years for which there are no observed data. Thin grey lines join sampling units that 
+       are repeatedly measured over time.\n"))
+       cat("::::\n\n")
+
+       cat(":::: {.figure #fig-x}\n")
+       cat(paste0("![](", fig6a,"){width=400px}\n\n"))
+       cat(paste0("Observed data (dots) with simple gam smoothers (red ribbon) 
+       conditional on datasetID (facets) in ", catg , " for the ", eco, " 
+       GCRMN ecoregion.\n"))
+       cat("::::\n\n")
+       cat(":::\n\n")
+
+      
+      cat(paste0("######## Data conditional on grid ID\n"))
+      fig7a <- str_replace(fig, "pdp", "raw_pdp_grid_id") |>
+               str_replace("figures/ecoregion/ecoregion_", "figures/raw/")
+      cat("The salmon colored line/points represent the simple hierarchical **means**, the teal coloured line/dots represent the hierarchical **medians**\n\n")
+      ## cat(paste0(
+      ##   "![](", fig1a_V2, "){width=400px}\n",
+      ##   "![](", fig7a, "){width=700px}\n\n"
+      ##   ))
+
+       cat('::: {layout="[ 0.49, -0.01, 0.49 ]"}\n\n')
+       cat(":::: {.figure #fig-x}\n")
+       cat(paste0("![](", fig4a_V2,"){width=400px}\n\n"))
+       cat(paste0("Modelled temporal trend (orange
+       ribbon with white line) in ", catg , " with overlayed observed data
+       (dots) for the ", eco, " GCRMN ecoregion.  The orange bands represent
+       80% and 95% (darker) credibility intervals.  Grey ribbon represents 
+       years for which there are no observed data. Thin grey lines join sampling units that 
+       are repeatedly measured over time.\n"))
+       cat("::::\n\n")
+       cat(":::: {.figure #fig-x}\n")
+       cat(paste0("![](", fig7a,"){width=400px}\n\n"))
+       cat(paste0("Observed data (dots) with simple gam smoothers (red ribbon) 
+       conditional on grid ID (facets) in ", catg , " for the ", eco, " 
+       GCRMN ecoregion.\n"))
+       cat("::::\n\n")
+       cat(":::\n\n")
+
+      cat(":::\n")
     }
     cat(":::\n")
   }
@@ -233,18 +443,32 @@ for (catg in cats) {
   cat("::: {.panel-tabset}\n")
   for (subreg in sort(unique(dat_cat$subregion))) {
     cat(paste0("###### ", subreg, "\n"))
-    dat_subreg <- benthic_posteriors_subregions |>
+    dat_subreg <- summary_subregion |>
       dplyr::filter(category == catg, subregion == subreg)
     fig <- dat_subreg$plot[[1]]
     fig1a <- str_replace(fig, "pdp", "pdp_a")
+    fig1a_V2 <- str_replace(fig, "pdp", "pdp_a_V2")
     fig2 <- str_replace(fig, "pdp", "pdpraw")
     fig3 <- str_replace(fig, "pdp", "pdprawxgboost")
     fig3a <- str_replace(fig, "pdp", "pdprawxgboost_a")
-    cat(paste0(#"![](", fig2, "){width=300px}",
-      #"![](", fig, "){width=300px}",
-      "![](", fig3, "){width=400px}",
-      "![](", fig3a, "){width=400px}\n\n"
-    ))
+    fig3a_V2 <- str_replace(fig, "pdp", "pdp_a_V2")
+    fig4a_V2 <- str_replace(fig, "pdp", "pdp_bayes_a_V2")
+    ## cat(paste0(#"![](", fig2, "){width=300px}",
+    ##   #"![](", fig, "){width=300px}",
+    ##   ## "![](", fig3, "){width=400px}",
+    ##   "![](", fig3a_V2, "){width=400px}\n\n"
+    ## ))
+
+
+    cat("::: {.figure #fig-x}\n")
+    cat(paste0("![](", fig4a_V2,"){width=400px}\n\n"))
+    cat(paste0("Modelled temporal trend (orange
+    ribbon with white line) in ", catg , " with overlayed observed data
+    (dots) for the ", subreg, " GCRMN subregion.  The orange bands represent
+    80% and 95% (darker) credibility intervals.  Grey ribbon represents 
+    years for which there are no observed data.\n"))
+    cat(":::\n\n")
+
     cat('::: {.callout-note collapse="true"}\n#### View weights\n')
     ## wts |>
     ##   mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
@@ -266,6 +490,32 @@ for (catg in cats) {
       knitr::kable(caption = "Ecoregion (MEOW) reef area and weights applied in the aggregation up to Subregion") |>
       print()
     cat(":::\n")
+    cat("::: {.callout-note collapse=true}\n")
+    cat("#### Show data behind figure\n")
+    summary_subregion_V2 |>
+      filter(category == catg, region == reg, subregion == subreg) |>
+      _[["cellmeans_trim"]][[1]] |>
+      dplyr::select(-variable) |>
+      dplyr::mutate(across(c(median, lower, upper, lower_80, upper_80), \(x) round(x * 100, 2))) |>
+      knitr::kable(caption = paste0("Estimated annual ", catg, " cover (%) at the subregion scale.")) |>
+      print()
+    cat(":::\n")
+    cat("::: {.callout-note collapse=true}\n")
+    cat("#### Show contrasts\n")
+    contrasts_subregions |>
+      filter(category == catg, region == reg, subregion == subreg) |>
+      _[["contrast_sum"]][[1]] |>
+      knitr::kable(caption = paste0("Contrasts between pairs of years for ", catg, " cover (%) at the subregion scale.
+      For each contrast, results are expressed as absolute change (`abs`) and percentage change (`frac`).   Negative values indicate declines between the pairs of years.  `Pl` and `Pg`
+      represent the probability of decline and increase respectively.")) |>
+      print()
+    cat(paste0("- ", 
+      contrasts_subregions |>
+        filter(category == catg, region == reg, subregion == subreg) |>
+        _[["narrative"]][[1]]$interpretation, sep="\n\n")
+      )
+      
+    cat(":::\n")
   }
   cat(":::\n")
 
@@ -275,11 +525,18 @@ for (catg in cats) {
     dplyr::filter(category == catg, region == reg)
   fig <- data_reg$plot[[1]]
   fig2 <- str_replace(fig, "pdp", "pdprawxgboost")
-  fig2a <- str_replace(fig, "pdp", "pdprawxgboost_a")
-  cat(paste0(#"![](", fig, "){width=300px}",
-             "![](", fig2, "){width=400px}",
-             "![](", fig2a, "){width=400px}\n\n"
-             ))
+  fig2a <- str_replace(fig, "pdp", "pdp_bayes_a_V2")
+  
+  cat("::: {.figure #fig-x}\n")
+  cat(paste0("![](", fig2a,"){width=400px}\n\n"))
+  cat(paste0("Modelled temporal trend (orange
+  ribbon with white line) in ", catg , " with overlayed observed data
+  (dots) for the ROPME GCRMN region.  The orange bands represent
+  80% and 95% (darker) credibility intervals.  Grey ribbon represents 
+  years for which there are no observed data.\n"))
+  cat(":::\n\n")
+
+
   cat('::: {.callout-note collapse="true"}\n#### View weights\n')
   ## wts |>
   ##   mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
@@ -299,6 +556,31 @@ for (catg in cats) {
       ) |>
     knitr::kable(caption = "Subregion reef area and weights applied in the aggregation up to Region") |>
     print()
+    cat(":::\n")
+    cat("::: {.callout-note collapse=true}\n")
+    cat("#### Show data behind figure\n")
+    summary_region_V2 |>
+      filter(category == catg, region == reg) |>
+      _[["cellmeans_trim"]][[1]] |>
+      dplyr::select(-variable) |>
+      dplyr::mutate(across(c(median, lower, upper, lower_80, upper_80), \(x) round(x * 100, 2))) |>
+      knitr::kable(caption = paste0("Estimated annual ", catg, " cover (%) at the region scale.")) |>
+      print()
+    cat(":::\n")
+    cat("::: {.callout-note collapse=true}\n")
+    cat("#### Show contrasts\n")
+    contrasts_regions |>
+      filter(category == catg, region == reg) |>
+      _[["contrast_sum"]][[1]] |>
+      knitr::kable(caption = paste0("Contrasts between pairs of years for ", catg, " cover (%) at the region scale.
+      For each contrast, results are expressed as absolute change (`abs`) and percentage change (`frac`).  Negative values indicate declines between the pairs of years. `Pl` and `Pg`
+      represent the probability of decline and increase respectively.")) |>
+      print()
+    cat(paste0("- ", 
+      contrasts_regions |>
+        filter(category == catg, region == reg) |>
+        _[["narrative"]][[1]]$interpretation, sep="\n\n")
+      )
     cat(":::\n")
 }
 ```

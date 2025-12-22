@@ -292,7 +292,7 @@ fit_models <- function() {
       data_path <- fit_models_global_parameters_$data_path
       ## ---- fit models stan
       print(unique(benthic_models$region))
-      run_again<- FALSE
+      run_again <- TRUE
       if (!run_again) {
         benthic_models <- benthic_models |>
           mutate(mod = map2(.x = stan_data, .y = name,
@@ -303,7 +303,7 @@ fit_models <- function() {
             })) 
       } else {
         model_stan <- cmdstanr::cmdstan_model(stan_file =  "gcrmn_model.stan")
-
+        print(paste0("run again: ", run_again))
         options(future.globals.maxSize = 2 * 1024^3)
         old_plan <- future::plan(future::multisession, workers = 20)
         results <- furrr::future_map2(.x = benthic_models$stan_data,
@@ -311,6 +311,7 @@ fit_models <- function() {
           .f = ~ {
             name <- .y
             nm <- paste0(data_path, "mod_", name, ".rds")
+            mod_stan <- NULL
             if (file.exists(nm)) {
               cat(paste("\n", "Skipping", name, "as it already exists\n"))
               mod_stan <- readRDS(file = nm)

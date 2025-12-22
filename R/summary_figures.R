@@ -560,7 +560,17 @@ summary_figures <- function() {
       ## ---- summarise info function
       summarise_info <- function(dat) {
        dat |> 
-        mutate(
+         mutate(
+           cellmeans = map2(
+             .x = cellmeans,
+             .y = stan_data,
+             .f = ~ {
+               .x  |>
+                 mutate(
+                   data_year = ifelse(Year %in% .y$all_years[.y$data_years], TRUE, FALSE)
+                 )
+             }
+           ),
           min_year = map(.x = stan_data,
             .f = ~ {
               .x$all_years[min(.x$data_years)]

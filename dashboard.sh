@@ -156,10 +156,9 @@ while true; do
     # Build RIGHT block
     # ────────────────────────────────────────────────
     # ref=$(stat -c %y "$(ls -t $MOD_PATH | head -1)" | cut -d. -f1))
-    newest="$(ls -1t -- "$MOD_PATH" | grep "gcrmn_model_" | head -n1)"
+    newest="$(ls -1t -- "$MOD_PATH" | grep "gcrmn_model*" | head -n1)"
     ref=$(ls -lt --time-style="+%b %d %H:%M" "$MOD_PATH/$newest" | cut -d ' ' -f 6,7,8)
-    RIGHT_INPUT=$(ls -lat --time-style="+%b %d %H:%M" "$MOD_PATH" | grep "gcrmn_model_" | cut -d ' ' -f 6- | grep "$ref" | head -n 16 | sort -k 5 -h -r )
-    # RIGHT_INPUT=$(ls -lath "$MOD_PATH" | grep "$latest_ts" )
+    RIGHT_INPUT=$(ls -lat --time-style="+%b %d %H:%M" "$MOD_PATH" | grep "gcrmn_model*" | cut -d ' ' -f 6- | grep "$ref" | head -n 16 | sort -k 5 -h -r )
     build_block "Model listing: $MOD_PATH gcrmn_model_" "$RIGHT_INPUT" RIGHT_BLOCK "TR"
 
     # ────────────────────────────────────────────────

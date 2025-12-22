@@ -43,7 +43,7 @@ process_spatial <- function() {
       primary_path <- spatial_global_parameters_$primary_path
       ## ---- spatial lookup file
       spatial_lookup_file <- paste0(primary_path,
-        "data_benthic_murray.RData")
+        "data_benthic_prepared.RData")
       ## ----end
       spatial_lookup_file
     },
@@ -204,8 +204,9 @@ process_spatial <- function() {
     tar_target(gcrmn_ecoregions_file_, {
       primary_path <- spatial_global_parameters_$primary_path
       ## ---- gcrmn ecoregions file
+      print("Check gcrmn_ecoregion_file")
       gcrmn_ecoregions_file <- paste0(primary_path, "gcrmn_ecoregions/",
-        "gcrmn_ecoregions.shp")
+        "gcrmn_ecoregions.shp") 
       ## ----end
       gcrmn_ecoregions_file
     },
@@ -215,6 +216,7 @@ process_spatial <- function() {
       primary_path <- spatial_global_parameters_$primary_path
       gcrmn_ecoregions_file <- gcrmn_ecoregions_file_
       gcrmn_subregions <- gcrmn_subregions_
+      print("Read gcrmn_ecoregion_file")
       ## ---- gcrmn ecoregions
       gcrmn_ecoregions <- read_sf(gcrmn_ecoregions_file)
       ## ----end

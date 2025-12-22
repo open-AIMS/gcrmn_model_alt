@@ -477,39 +477,258 @@ aggregate_models <- function() {
     ),
 
     ## Contrasts
+    tar_target(user_contrasts_, {
+      ## ---- user contrasts
+      contr <- tribble(
+        ~name, ~start_yrs, ~end_yrs,
+        "2015 vs 2018", 2015, 2018,
+        "2018 vs 2024", 2018, 2024,
+        "2000s vs 2010s", 2000:2009, 2010:2019,
+        "2010s vs 2020s", 2010:2019, 2020:2024,
+        "2000s vs 2020s", 2000:2009, 2020:2024,
+        )
+      ## ----end
+      contr
+    }),
+    tar_target(make_contrast_matrix_, {
+      ## ---- make contrast matrix
+      make_contrast_matrix <- function(year, contr) {
+        contrast_matrix <- sapply(1:nrow(contr), function(i) {
+          start_years <- as.character(contr$start_yrs[[i]])
+          end_years <- as.character(contr$end_yrs[[i]])
+          vec <- rep(0, length(year))
+          names(vec) <- as.character(year)
+          vec[start_years] <- -1 / length(start_years)
+          vec[end_years] <- 1 / length(end_years)
+          return(vec)
+        })
+        colnames(contrast_matrix) <- paste(contr$name)
+        return(contrast_matrix)
+      }
+      ## ----end
+      make_contrast_matrix
+    }),
+    ## Express summarised contrasts as percentages
+    tar_target(express_percentage_, {
+      ## ---- express percentage
+      express_percentage <- function(contrast_sum) {
+        contrast_sum |> 
+          ungroup() |>
+          group_by(contrast) |> 
+          mutate(abs_median = median[type == "abs"]) |>
+          mutate(across(c(median, lower, upper, lower_80, upper_80),
+            ~ case_when(
+              type == "abs"  ~ 100 * .x,
+              type == "frac" ~ (.x -1)*100,
+              ## TRUE ~ .x
+              ))) |>
+          # replace the frac exceedance probs
+          mutate(
+            Pg = case_when(
+              type == "frac" ~ Pg[type == "abs"][1],
+              TRUE           ~ Pg
+            ),
+            Pl = case_when(
+              type == "frac" ~ Pl[type == "abs"][1],
+              TRUE           ~ Pl
+            )
+          ) |>
+          dplyr::select(-abs_median, -variable)
+      }
+      ## ----end
+      express_percentage
+    }),
+    ## Construct a narrative based on contrasts
+    tar_target(construct_narrative_, {
+      ## ---- construct_narrative
+      construct_narrative <- function(contrast_sum) {
+        contrast_sum |> 
+          ungroup() |>
+          group_by(contrast) |> 
+          summarise(Pl = Pl[1],
+            Pg = Pg[1],
+            median_abs = median[type == "abs"],
+            median_frac = median[type == "frac"],
+            btw = str_replace(contrast[type == "abs"], "vs", "and"),
+            .groups = "drop") |> 
+          mutate(interpretation = case_when(
+            Pl >= 0.85 & Pl < 0.9 ~
+              sprintf("There is weak evidence that cover has declined between %s (average decline: %0.2f percentage points, %0.2f%% decline).",
+                btw, median_abs, median_frac),
+            Pl >= 0.9 & Pl < -0.9 ~
+              sprintf("There is evidence that cover has declined between %s (average decline: %0.2f percentage points, %0.2f%% decline).",
+                btw, median_abs, median_frac),
+            Pl > 0.95 ~
+              sprintf("There is strong evidence that cover has declined between %s (average decline: %0.2f percentage points, %0.2f%% decline).",
+                btw, median_abs, median_frac),
+            Pg >= 0.85 & Pg <0.9 ~
+              sprintf("There is weak evidence that cover has increased between %s (average increase: %0.2f percentage points, %0.2f%% increase).",
+                btw, median_abs, median_frac),
+            Pg >= 0.9 & Pg <0.95 ~
+              sprintf("There is evidence that cover has increased (between %s average increase: %0.2f percentage points, %0.2f%% increase).",
+                btw, median_abs, median_frac),
+            Pg > 0.95 ~
+              sprintf("There is strong evidence that cover has increased between %s (average increase: %0.2f percentage points, %0.2f%% increase).",
+                btw, median_abs, median_frac),
+            TRUE ~ sprintf("There is no evidence of a change in cover between %s.", btw)
+          ))
+      }
+      ## ----end
+      construct_narrative
+    }),
+
+    tar_target(contrasts_subregions_, {
+      benthic_posteriors_subregions <- aggregate_subregions_V2_
+      make_contrast_matrix <- make_contrast_matrix_
+      express_percentage <- express_percentage_
+      construct_narrative <- construct_narrative_
+      contr <- user_contrasts_
+      ## ---- contrasts_subregions
+      contrasts_subregions <- benthic_posteriors_subregions |>
+        mutate(contrast = map(.x = posteriors,
+          .f = ~ {
+            .x |> 
+              group_by(.draw) |>
+              reframe(across(value, ~ {
+                cm <- make_contrast_matrix(Year, contr)
+                res_abs <- as.numeric(.x %*% cm) 
+                res_frac <- exp(as.numeric(log(.x) %*% cm))
+                data.frame(contrast = rep(colnames(cm), 2),
+                  type = rep(c("abs", "frac"), each = length(colnames(cm))),
+                  value = c(res_abs, res_frac)
+                )
+              })) |>
+              unnest(cols = c(value))
+          })) |> 
+        mutate(contrast_sum = map(.x = contrast,
+          .f =  ~ {
+            .x |>
+              group_by(contrast, type) |> 
+              posterior::summarise_draws(
+                median,
+                HDInterval::hdi,
+                ~ HDInterval::hdi(.x, credMass = c(0.8)),
+                Pl = ~ mean(.x < 0),
+                Pg = ~ mean(.x > 0)
+              ) |>
+              rename(lower_80 = V4, upper_80 = V5) 
+          }
+        )) |>
+        ## Express result as % rather than proportions
+        mutate(contrast_sum = map(.x = contrast_sum,
+          .f =  ~ .x |> express_percentage())) |> 
+      ## Generate narative
+        mutate(narrative = map(.x = contrast_sum,
+          .f =  ~ .x |> construct_narrative()))
+      ## ----end
+      contrasts_subregions
+    }
+    ),
+    tar_target(contrasts_regions_, {
+      benthic_posteriors_regions <- aggregate_regions_V2_
+      make_contrast_matrix <- make_contrast_matrix_
+      express_percentage <- express_percentage_
+      construct_narrative <- construct_narrative_
+      contr <- user_contrasts_
+      ## ---- contrasts_regions
+      contrasts_regions <- benthic_posteriors_regions |>
+        mutate(contrast = map(.x = posteriors,
+          .f = ~ {
+            .x |> 
+              group_by(.draw) |>
+              reframe(across(value, ~ {
+                cm <- make_contrast_matrix(Year, contr)
+                res_abs <- as.numeric(.x %*% cm) 
+                res_frac <- exp(as.numeric(log(.x) %*% cm))
+                data.frame(contrast = rep(colnames(cm), 2),
+                  type = rep(c("abs", "frac"), each = length(colnames(cm))),
+                  value = c(res_abs, res_frac)
+                )
+              })) |>
+              unnest(cols = c(value))
+          })) |> 
+        mutate(contrast_sum = map(.x = contrast,
+          .f =  ~ {
+            .x |>
+              group_by(contrast, type) |> 
+              posterior::summarise_draws(
+                median,
+                HDInterval::hdi,
+                ~ HDInterval::hdi(.x, credMass = c(0.8)),
+                Pl = ~ mean(.x < 0),
+                Pg = ~ mean(.x > 0)
+              ) |>
+              rename(lower_80 = V4, upper_80 = V5) 
+          }
+        )) |>
+        ## Express result as % rather than proportions
+        mutate(contrast_sum = map(.x = contrast_sum,
+          .f =  ~ .x |> express_percentage())) |> 
+      ## Generate narative
+        mutate(narrative = map(.x = contrast_sum,
+          .f =  ~ .x |> construct_narrative()))
+      ## ----end
+      contrasts_regions
+    }
+    ),
+
     tar_target(contrasts_global_, {
       benthic_posteriors_global <- aggregate_global_V2_
+      make_contrast_matrix <- make_contrast_matrix_
+      express_percentage <- express_percentage_
+      construct_narrative <- construct_narrative_
+      contr <- user_contrasts_
       ## ---- contrasts_global
-      yrs <- benthic_posteriors_global$cellmeans[[1]]$Year
-      a <- rep(0, len = length(yrs))
-      a[which(yrs %in% c(2015, 2017))] <- c(1, -1)
-      a
+      ## This will yield values that enumerate the effect
+      ## of the higher years compared to the lower years
+      ## (as if estimating an increase).
+      ## For example, an absolute value of 0.05 indicates
+      ## that the cover in the higher year is 0.05 units higher
+      ## An fracional value of 1.15 indicates that cover was
+      ## 15% higher.
+      ## To invert these (to express as a decline), multiply the
+      ## absolute values by -1 and invert the fractional values
+      ## E.g if the fractional estimate was 1.15, then it becomes
+      ## 1/1.15 = 0.869 and thus (1/1.15 - 1) * 100 = -13% decline
 
-      
       contrasts_global <- benthic_posteriors_global |>
         mutate(contrast = map(.x = posteriors,
           .f = ~ {
-            .x |> filter(Year %in% c(2015, 2017)) |>
-              droplevels() |>
+            .x |> 
               group_by(.draw) |>
-              summarise(value = diff(value * 100)) |>
-              mutate(contrast = "2014 vs 2016")
-          })) |>
+              reframe(across(value, ~ {
+                cm <- make_contrast_matrix(Year, contr)
+                res_abs <- as.numeric(.x %*% cm) 
+                res_frac <- exp(as.numeric(log(.x) %*% cm))
+                data.frame(contrast = rep(colnames(cm), 2),
+                  type = rep(c("abs", "frac"), each = length(colnames(cm))),
+                  value = c(res_abs, res_frac)
+                )
+              })) |>
+              unnest(cols = c(value))
+          })) |> 
         mutate(contrast_sum = map(.x = contrast,
           .f =  ~ {
-           .x |>
-             group_by(contrast) |> 
-             posterior::summarise_draws(
-               median,
-               HDInterval::hdi,
-               ~ HDInterval::hdi(.x, credMass = c(0.8)),
-               Pl = ~ mean(.x < 0),
-               Pg = ~ mean(.x > 0)
-             ) |>
-             rename(lower_80 = V4, upper_80 = V5)
+            .x |>
+              group_by(contrast, type) |> 
+              posterior::summarise_draws(
+                median,
+                HDInterval::hdi,
+                ~ HDInterval::hdi(.x, credMass = c(0.8)),
+                Pl = ~ mean(.x < 0),
+                Pg = ~ mean(.x > 0)
+              ) |>
+              rename(lower_80 = V4, upper_80 = V5) 
           }
-          ))
+        )) |>
+        ## Express result as % rather than proportions
+        mutate(contrast_sum = map(.x = contrast_sum,
+          .f =  ~ .x |> express_percentage())) |> 
+      ## Generate narative
+        mutate(narrative = map(.x = contrast_sum,
+          .f =  ~ .x |> construct_narrative()))
       ## ----end
+      contrasts_global
     }
     )
     
