@@ -113,7 +113,9 @@ RUN R -e "options(repos = \
 
 ## INLA
 
-RUN R -e "install.packages('INLA',repos=c(getOption('repos'),INLA='https://inla.r-inla-download.org/R/stable'), dep=TRUE)"
+# RUN R -e "install.packages('INLA',repos=c(getOption('repos'),INLA='https://inla.r-inla-download.org/R/stable'), dep=TRUE)"
+
+RUN R -e "remotes::install_version('INLA', version = '24.05.10', repos = c(getOption('repos'), INLA = 'https://inla.r-inla-download.org/R/testing'), dep = TRUE)"
 
 RUN R -e "options(repos = \
     list(CRAN = \"https://packagemanager.posit.co/cran/2025-04-11/\")); \
@@ -271,6 +273,11 @@ RUN R -e "options(repos = \
 "
 
 RUN Rscript -e 'tinytex::tlmgr_install("standalone")'
+
+RUN R -e "options(repos = \
+    list(CRAN = \"https://packagemanager.posit.co/cran/2025-04-11/\")); \
+  install.packages(c(\"gtExtras\", \"kableExtra\")); \
+"
 
 RUN mkdir /home/Project
 WORKDIR /home/Project

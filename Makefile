@@ -33,10 +33,23 @@ build_docker:
 	docker build --tag gcrmn_alt .
 
 build_singularity:
+	## sudo mount -o remount,size=16G /tmp
 	@echo "Building singularity image..."
 	docker save gcrmn_alt -o gcrmn_alt.tar
 	apptainer build gcrmn_alt.sif docker-archive://gcrmn_alt.tar
- 
+
+build_singularity2:
+	@echo "Modifying singularity image..."
+	apptainer build --sandbox gcrmn_alt_sandbox.sif gcrmn_alt.sif
+	sudo apptainer shell --writable gcrmn_alt_sandbox.sif \
+	 export CXXFLAGS="-Wno-error=changes-meaning -Wno-deprecated-declarations" \
+	 export CXX_FLAGS="-Wno-error=changes-meaning -Wno-deprecated-declarations"
+	apptainer build gcrmn_alt2.sif gcrmn_alt_sandbox.sif
+
+ssh_singularity:
+	@echo "Copying singularity image to HPC..."
+	scp gcrmn_alt2.sif mlogan@hpc-l001.aims.gov.au:~/Work/AIMS/GCRMN/gcrmn_model_alt/gcrmn_alt2.sif
+
 docs_container:
 	docker run --rm -v "$(shell pwd)":/home/Project gcrmn_alt $(MAKE) render_docs
 
@@ -50,8 +63,8 @@ R_container:
 
 # Rule to run Python scripts
 # run_python: $(PYTHON_SCRIPTS)
-# 	@echo "Running Python scripts..."
-# 	python3 $^
+#		@echo "Running Python scripts..."
+#		python3 $^
 run_python:
 	@echo "Running python ploomber pipeline..."
 	cd python && ploomber build
