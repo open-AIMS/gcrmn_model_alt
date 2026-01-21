@@ -10,4 +10,5 @@
 #SBATCH --mail-type=ALL
 
 module load singularity
-singularity exec -B .:/home/Project r-analysis2.sif make run_R
+# singularity exec -B .:/home/Project r-analysis2.sif make run_R
+singularity exec -B .:/home/Project gcrmn_alt2.sif make run_R
