@@ -486,6 +486,7 @@ aggregate_models <- function() {
         "2000s vs 2010s", 2000:2009, 2010:2019,
         "2010s vs 2020s", 2010:2019, 2020:2024,
         "2000s vs 2020s", 2000:2009, 2020:2024,
+        "Ref vs 2020s", 1973:2009, 2020:2024,
         )
       ## ----end
       contr
@@ -577,16 +578,51 @@ aggregate_models <- function() {
       construct_narrative
     }),
 
+    ## write a function that uses data_years and all_years to replace
+    ## draws for any non data_year with NA (or replace the contrast value with 0)
+    
     tar_target(contrasts_subregions_, {
+      benthic_posteriors <- aggregate_compile_V2_  #just added
       benthic_posteriors_subregions <- aggregate_subregions_V2_
       make_contrast_matrix <- make_contrast_matrix_
       express_percentage <- express_percentage_
       construct_narrative <- construct_narrative_
       contr <- user_contrasts_
       ## ---- contrasts_subregions
-      contrasts_subregions <- benthic_posteriors_subregions |>
-        mutate(contrast = map(.x = posteriors,
+      ## extract the data years for each subregion -------------------------
+      exclude_prior_years <- TRUE
+      stan_data  <-
+        benthic_posteriors |>
+        ungroup(ecoregion) |>
+        ## group_by(region, subregion, category) |>
+        dplyr::select(region, subregion, category, stan_data) |>
+        ## filter(subregion %in% c("Caribbean 1", "Caribbean 2")) |>
+        summarise(stan_data = list(
+                    reduce(
+                      map(.x = stan_data,
+                          ~ .x[names(.x) %in% c("data_years", "all_years")]),
+                      ~ map2(.x, .y, ~ sort(unique(c(.x, .y))))))) |>
+        mutate(exclude_years = map(.x = stan_data,
           .f = ~ {
+           stan_data <- .x
+           prior_years <- stan_data$all_years[1:(min(stan_data$data_years) - 1)]
+           prior_years
+          }))
+      ## --------------------------------------------------------------------
+
+      contrasts_subregions <- benthic_posteriors_subregions |>
+        left_join(stan_data)
+      contrasts_subregions <- contrasts_subregions |> 
+        mutate(contrast = map2(.x = posteriors, .y = exclude_years,
+          .f = ~ {
+            if (exclude_prior_years) {  ## adjust the contrasts to exclude prior years
+              exclude_years <- .y
+              contr <- contr |>
+                mutate(start_yrs = map(.x = start_yrs,
+                  .f = ~ .x[!.x %in% exclude_years])) |> 
+                mutate(end_yrs = map(.x = end_yrs,
+                  .f = ~ .x[!.x %in% exclude_years])) 
+            }
             .x |> 
               group_by(.draw) |>
               reframe(across(value, ~ {
@@ -625,15 +661,45 @@ aggregate_models <- function() {
     }
     ),
     tar_target(contrasts_regions_, {
+      benthic_posteriors <- aggregate_compile_V2_  #just added
       benthic_posteriors_regions <- aggregate_regions_V2_
       make_contrast_matrix <- make_contrast_matrix_
       express_percentage <- express_percentage_
       construct_narrative <- construct_narrative_
       contr <- user_contrasts_
       ## ---- contrasts_regions
-      contrasts_regions <- benthic_posteriors_regions |>
-        mutate(contrast = map(.x = posteriors,
+      ## extract the data years for each subregion -------------------------
+      exclude_prior_years <- TRUE
+      stan_data  <-
+        benthic_posteriors |>
+        ungroup(subregion, ecoregion) |>
+        dplyr::select(region, category, stan_data) |>
+        summarise(stan_data = list(
+                    reduce(
+                      map(.x = stan_data,
+                          ~ .x[names(.x) %in% c("data_years", "all_years")]),
+                      ~ map2(.x, .y, ~ sort(unique(c(.x, .y))))))) |> 
+        mutate(exclude_years = map(.x = stan_data,
           .f = ~ {
+           stan_data <- .x
+           prior_years <- stan_data$all_years[1:(min(stan_data$data_years) - 1)]
+           prior_years
+          }))
+      ## --------------------------------------------------------------------
+
+      contrasts_regions <- benthic_posteriors_regions |>
+        left_join(stan_data)
+      contrasts_regions <- contrasts_regions |>
+        mutate(contrast = map2(.x = posteriors, .y = exclude_years,
+          .f = ~ {
+            if (exclude_prior_years) {  ## adjust the contrasts to exclude prior years
+              exclude_years <- .y
+              contr <- contr |>
+                mutate(start_yrs = map(.x = start_yrs,
+                  .f = ~ .x[!.x %in% exclude_years])) |> 
+                mutate(end_yrs = map(.x = end_yrs,
+                  .f = ~ .x[!.x %in% exclude_years])) 
+            }
             .x |> 
               group_by(.draw) |>
               reframe(across(value, ~ {

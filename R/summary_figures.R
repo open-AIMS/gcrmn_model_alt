@@ -1213,7 +1213,7 @@ summary_figures <- function() {
               digits = 2,
               format = "html",
               col.names = c("Region", "Temporal<br>trend",
-                "Percent<br>change in cover<br>(2000s vs 2020s)",
+                "Percent<br>change in cover<br>(<2010 vs 2020s)",
                 "Confidence<br>in a change"),
               align = c("l", "c", "c", "c"),
               escape = FALSE
@@ -1239,7 +1239,7 @@ summary_figures <- function() {
               digits = 2,
               format = "latex",
               col.names = linebreak(c("Region", "Temporal\ntrend",
-                "Percent\nchange in cover\n(2000s vs 2020s)",
+                "Percent\nchange in cover\n(<2010 vs 2020s)",
                 "Confidence\nin a change"),
                 align = c("l", "c", "c", "c")),
               align = c("l", "c", "c", "c"),
@@ -1275,7 +1275,8 @@ summary_figures <- function() {
           .f = ~ {
             .x |>
               ungroup() |> 
-              filter(contrast == "2000s vs 2020s", type == "frac") |>
+              ## filter(contrast == "2000s vs 2020s", type == "frac") |>
+              filter(contrast == "Ref vs 2020s", type == "frac") |>
               dplyr::select(median, Pl, Pg)
           })) |>
         dplyr::select(region, category, long_term_change) |>
@@ -1305,7 +1306,7 @@ summary_figures <- function() {
         ungroup() |> 
         complete(region, category, Year) |>
         dplyr::select(region, category, Year, median) |>
-        mutate(Period_1 = ifelse(Year > 1999 & Year < 2010, TRUE, FALSE)) |> 
+        mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
         mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
         arrange(region)
       trends_minmax <- 
