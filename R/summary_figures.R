@@ -8,6 +8,7 @@ summary_figures <- function() {
         library(tidyverse)      # for data manipulation and visualisation
         library(furrr)
         library(data.table)
+        library(kableExtra)
         ## ----end
       }
     ),
@@ -1086,6 +1087,250 @@ summary_figures <- function() {
         summarise_info()
       # ----end
       summary_global_V2
+    }
+    ),
+
+    ## Global tables - functions
+    tar_target(create_sparkline_, {
+      ## ---- create sparkline function
+      create_sparkline <- function(df, xlim = c(1980, 2024), minmax = FALSE,
+                                   format = "html", sparkline_file) {
+        g <-
+          df |>
+          ggplot(aes(x = Year, y = median)) +
+          geom_line(linewidth = 0.5, color = "grey") +
+          geom_line(data = df |> filter(Period_1),
+            linewidth = 0.5, color = "red") +
+          geom_line(data = df |> filter(Period_2),
+            linewidth = 0.5, color = "blue") +
+          xlim(xlim) +
+          theme_void() +
+          theme(plot.margin = margin(0, 0, 0, 0))
+        if (!is_false(minmax)) {
+          g <- g + ylim(minmax)
+        }
+        filenm <- paste0(sparkline_file)
+        ggsave(filenm, plot = g, width = 150, height = 50, units = "px", dpi = 300)
+
+        ## if (format == "html") {
+        ##   return(filenm)
+        ## } else {
+        ##   base64_img <- base64enc::base64encode(filenm)
+        ##   base64_img <- str_replace_all(base64_img, c("\\\\" = "\\\\\\\\", "\\$" = "\\\\$", "&" = "\\\\&", "%" = "\\\\%"))
+        ##   ## latex_img <- paste0(
+        ##   ##   "\\includegraphics[width=150px, height=50px]{data:image/png;base64,",
+        ##   ##   base64_img,"}"
+        ##   ## )
+        ##   latex_img <- paste0(
+        ##     "data:image/png;base64,", base64_img
+        ##   )
+        ##   return(latex_img)
+        ## }
+
+        return(str_replace(filenm, "../", "../../"))
+      }
+      ## ----end
+      create_sparkline
+    }),
+    tar_target(signal_strength_, {
+      ## ---- create signal strength function
+      signal_strength <- function(df) {
+        df |>
+          ## get antenna-bars icons from tabler.io/icons
+          mutate(Confidence = case_when(
+            median > 0 & Pg < 0.85 ~ "../../docs/resources/antenna-bars-1.svg",
+            median < 0 & Pl < 0.85 ~ "../../docs/resources/antenna-bars-1.svg",
+            median > 0 & Pg < 0.9 ~ "../../docs/resources/antenna-bars-2.svg",
+            median < 0 & Pl < 0.9 ~ "../../docs/resources/antenna-bars-2.svg",
+            median > 0 & Pg < 0.95 ~ "../../docs/resources/antenna-bars-3.svg",
+            median < 0 & Pl < 0.95 ~ "../../docs/resources/antenna-bars-3.svg",
+            median > 0 & Pg < 1 ~ "../../docs/resources/antenna-bars-4.svg",
+            median < 0 & Pl < 1 ~ "../../docs/resources/antenna-bars-4.svg",
+            median > 0 & Pg == 1 ~ "../../docs/resources/antenna-bars-5.svg",
+            median < 0 & Pl == 1 ~ "../../docs/resources/antenna-bars-5.svg"
+          )) |>
+          ungroup() |> 
+          dplyr::select(region, Confidence) |>
+          deframe() 
+      }
+      ## ----end
+      signal_strength 
+    }),
+    tar_target(summary_tbl_, {
+      create_sparkline <- create_sparkline_
+      signal_strength <- signal_strength_
+      aggregate_regions <- aggregate_regions_V2_
+      library(kableExtra)
+      ## ---- summary_tbl_global V2
+      summary_tbl <- function(long_term_change, trends, minmax,
+                              format = "html", sparkline_path) {
+        confidence <- long_term_change |>
+          signal_strength()
+        sparkline <- trends |>
+          group_by(region) |>
+          nest() |>
+          mutate(path = map2(.x = data, .y = region,
+            .f = ~ {
+              .x |>
+                create_sparkline(minmax = minmax, format = format,
+                  sparkline_file = paste0(sparkline_path,
+                    "sparkline_",
+                    .y,
+                    ".png"))
+            }
+          )) |>
+          dplyr::select(-data) |>
+          unnest(path) |>
+          deframe()
+
+        arrow_from_value <- function(x, max_angle = 45, scale = 1) {
+          angle <- pmax(pmin(x * scale, max_angle), -max_angle)
+          angle <- -1 * angle
+          sprintf(
+            '<span style="display:inline-block; transform: rotate(%0.1fdeg)">⟶</span>',
+            angle
+          )
+        } 
+
+        arrow_from_value_latex <- function(x, max_angle = 45, scale = 1) {
+          angle <- pmax(pmin(x * scale, max_angle), -max_angle)
+          angle <- -1 * angle
+          sprintf(
+            '\\rotatebox{%0.1f}{$\\rightarrow$}',
+            angle
+          )
+        }
+        
+        if (format == "html") {
+          tbl <- long_term_change |>
+            ungroup() |> 
+            mutate(Trend = "") |>
+            mutate(Direction = arrow_from_value(median, scale = 1)) |> 
+            mutate(median = paste(Direction, "  ", sprintf("%6.1f%%", median))) |> 
+            mutate(Confidence = "") |> 
+            dplyr::select(Region = region, Trend, Change = median, Confidence) |> 
+            kbl(booktabs = TRUE,
+              digits = 2,
+              format = "html",
+              col.names = c("Region", "Temporal<br>trend",
+                "Percent<br>change in cover<br>(2000s vs 2020s)",
+                "Confidence<br>in a change"),
+              align = c("l", "c", "c", "c"),
+              escape = FALSE
+            ) |> 
+            column_spec(4, image = spec_image(confidence, width = 50, height = 50)) |> 
+            column_spec(2, image = spec_image(sparkline, width = 150, height = 50)) |> 
+            kable_paper(full_width = FALSE)
+        } else {
+          confidence <- gsub(".svg", ".png", confidence)
+          tbl <- long_term_change |>
+            ungroup() |> 
+            mutate(Trend = "") |>
+            mutate(Direction = arrow_from_value_latex(median, scale = 1)) |> 
+            mutate(median = paste(Direction,
+              sprintf("\\hphantom{00}\\makebox[2.5em][r]{%6.1f\\%%}", median))) |> 
+            mutate(Confidence = "") |> 
+            ## mutate(Trend = paste0(
+            ##   "\\includegraphics[width=150px, height=50px]{",
+            ##   sparkline, "}")
+            ##   ) |> 
+            dplyr::select(Region = region, Trend, Change = median, Confidence) |> 
+            kbl(booktabs = TRUE, linesep = "",
+              digits = 2,
+              format = "latex",
+              col.names = linebreak(c("Region", "Temporal\ntrend",
+                "Percent\nchange in cover\n(2000s vs 2020s)",
+                "Confidence\nin a change"),
+                align = c("l", "c", "c", "c")),
+              align = c("l", "c", "c", "c"),
+              escape = FALSE
+            ) |> 
+            column_spec(2, image = spec_image(sparkline, width = 150, height = 50)) |>
+            column_spec(4, image = spec_image(confidence, width = 50, height = 50)) 
+        }
+        tbl
+      }
+      ## ----end
+      summary_tbl
+    }
+    ),
+    ## Global tables - with each region
+    tar_target(summary_tbl_global_, {
+      ## aggregate_regions <- aggregate_regions_V2_
+      output_path <- summary_figures_global_parameters_$output_path
+      tab_path <- paste0(output_path, "tables/")
+      sparkline_path <- paste0(output_path, "tables/sparkline/")
+      if (!dir.exists(tab_path)) dir.create(tab_path)
+      if (!dir.exists(sparkline_path)) dir.create(sparkline_path)
+      summary_tbl <- summary_tbl_
+      summary_regions <- summary_region_V2_
+      contrasts_regions <- contrasts_regions_
+      library(kableExtra)
+      ## ---- summary_tbl_global V2
+      ## get the contasts
+      contrasts_regions_hc <- contrasts_regions |>
+        filter(category == "Hard coral") |>
+        mutate(long_term_change = map(
+          .x = contrast_sum,
+          .f = ~ {
+            .x |>
+              ungroup() |> 
+              filter(contrast == "2000s vs 2020s", type == "frac") |>
+              dplyr::select(median, Pl, Pg)
+          })) |>
+        dplyr::select(region, category, long_term_change) |>
+        unnest(long_term_change) |>
+        arrange(region, category)
+      ## get the trends
+      ## aggregate_regions_hc <-
+      ##   summary_regions |>
+      ##   filter(category == "Hard coral") |>
+      ##   dplyr::select(region, category, cellmeans_trim) |>
+      ##   unnest(cellmeans_trim) |>
+      ##   ungroup() |> 
+      ##   complete(region, category, Year) |>
+      ##   dplyr::select(region, category, median)
+      ## trends_regions_hc <- aggregate_regions_hc |>
+      ##   with(split(median, region))
+      ## ## trends_regions_hc <- aggregate_regions_hc |>
+      ## ##   with(split(data.frame(Year, median), region))
+      ## ## trends_regions_hc <- trends_regions_hc |>
+      ## ##   lapply(function(x) list(x = x$Year, y = x$median)) 
+      
+      trends_regions_hc <-
+        summary_regions |>
+        filter(category == "Hard coral") |>
+        dplyr::select(region, category, cellmeans_trim) |>
+        unnest(cellmeans_trim) |> 
+        ungroup() |> 
+        complete(region, category, Year) |>
+        dplyr::select(region, category, Year, median) |>
+        mutate(Period_1 = ifelse(Year > 1999 & Year < 2010, TRUE, FALSE)) |> 
+        mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
+        arrange(region)
+      trends_minmax <- 
+        trends_regions_hc |>
+        summarise(
+          min = min(median, na.rm = TRUE),
+          max = max(median, na.rm = TRUE)) |>
+        as_vector()
+        
+        summary_tbl(contrasts_regions_hc,
+          trends_regions_hc,
+          trends_minmax,
+          sparkline_path = sparkline_path) |>
+          save_kable(file = paste0(tab_path, "summ_tbl_regions.html"))
+
+        summary_tbl(contrasts_regions_hc,
+          trends_regions_hc,
+          trends_minmax,
+          format = "latex",
+          sparkline_path = sparkline_path) |>
+          save_kable(file = paste0(tab_path, "summ_tbl_regions.tex"))
+          
+        summary_tbl_regions <- paste0(tab_path, "summ_tbl_regions.html")
+      ## ----end
+      summary_tbl_regions
     }
     )
 
