@@ -95,6 +95,18 @@ slurm_docs:
 # Rule to render all Quarto documents
 render_docs: $(HTML_FILES) $(PYTHON_SCRIPTS) $(R_SCRIPTS)
 
+copy_regions:
+	@echo "Creating regions from australia.qmd"
+	cat docs/australia.qmd | sed "s/Australia/Brazil/g" > docs/brazil.qmd
+	cat docs/australia.qmd | sed "s/Australia/Caribbean/g" > docs/caribbean.qmd
+	cat docs/australia.qmd | sed "s/Australia/EAS/g" > docs/eas.qmd
+	cat docs/australia.qmd | sed "s/Australia/ETP/g" > docs/etp.qmd
+	cat docs/australia.qmd | sed "s/Australia/Pacific/g" > docs/pacific.qmd
+	cat docs/australia.qmd | sed "s/Australia/PERSGA/g" > docs/persga.qmd
+	cat docs/australia.qmd | sed "s/Australia/ROPME/g" > docs/ropme.qmd
+	cat docs/australia.qmd | sed "s/Australia/South Asia/g" > docs/south_asia.qmd
+	cat docs/australia.qmd | sed "s/Australia/WIO/g" > docs/wio.qmd
+
 # Clean up intermediate files
 clean:
 	@echo "Cleaning up..."

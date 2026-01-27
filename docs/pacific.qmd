@@ -115,6 +115,7 @@ figcaption {
 #| message: false
 #| output: false
 library(tidyverse)
+library(kableExtra)
 ```
 
 
@@ -242,6 +243,7 @@ benthic_posteriors_regions <- targets::tar_read("aggregate_region_plots_", store
 summary_region <- targets::tar_read("summary_region_", store = "../R/_targets")
 summary_region_V2 <- targets::tar_read("summary_region_V2_", store = "../R/_targets")
 contrasts_regions <- targets::tar_read("contrasts_regions_", store = "../R/_targets")
+summary_tbl_region <- targets::tar_read("summary_tbl_region_", store = "../R/_targets")
 ```
  
 ```{r}
@@ -470,6 +472,7 @@ for (catg in cats) {
     cat(":::\n\n")
 
     cat('::: {.callout-note collapse="true"}\n#### View weights\n')
+    cat("::: {#tbl-wts}\n")
     ## wts |>
     ##   mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
     ##   filter(GCRMN_region == reg,
@@ -487,27 +490,38 @@ for (catg in cats) {
         Area=area,
         Weight = wt
       ) |>
-      knitr::kable(caption = "Ecoregion (MEOW) reef area and weights applied in the aggregation up to Subregion") |>
+      # knitr::kable(caption = "Ecoregion (MEOW) reef area and weights applied in the aggregation up to Subregion") |>
+      knitr::kable() |>
       print()
+    cat(paste0("Subregion reef area and weights applied in the aggregation up to Subregion.\n"))
     cat(":::\n")
+    cat(":::\n")
+
     cat("::: {.callout-note collapse=true}\n")
     cat("#### Show data behind figure\n")
+    cat("::: {#tbl-data}\n")
     summary_subregion_V2 |>
       filter(category == catg, region == reg, subregion == subreg) |>
       _[["cellmeans_trim"]][[1]] |>
       dplyr::select(-variable) |>
       dplyr::mutate(across(c(median, lower, upper, lower_80, upper_80), \(x) round(x * 100, 2))) |>
-      knitr::kable(caption = paste0("Estimated annual ", catg, " cover (%) at the subregion scale.")) |>
+      # knitr::kable(caption = paste0("Estimated annual ", catg, " cover (%) at the subregion scale.")) |>
+      knitr::kable() |>
       print()
+    cat(paste0("Estimated annual ", catg, " cover (%) at the subregion scale.\n")) 
     cat(":::\n")
+    cat(":::\n")
+
     cat("::: {.callout-note collapse=true}\n")
     cat("#### Show contrasts\n")
+    cat("::: {#tbl-contr}\n")
     contrasts_subregions |>
       filter(category == catg, region == reg, subregion == subreg) |>
       _[["contrast_sum"]][[1]] |>
-      knitr::kable(caption = paste0("Contrasts between pairs of years for ", catg, " cover (%) at the subregion scale.
-      For each contrast, results are expressed as absolute change (`abs`) and percentage change (`frac`).   Negative values indicate declines between the pairs of years.  `Pl` and `Pg`
-      represent the probability of decline and increase respectively.")) |>
+      # knitr::kable(caption = paste0("Contrasts between pairs of years for ", catg, " cover (%) at the subregion scale.
+      # For each contrast, results are expressed as absolute change (`abs`) and percentage change (`frac`).   Negative values indicate declines between the pairs of years.  `Pl` and `Pg`
+      # represent the probability of decline and increase respectively.")) |>
+      knitr::kable() |> 
       print()
     cat(paste0("- ", 
       contrasts_subregions |>
@@ -515,6 +529,13 @@ for (catg in cats) {
         _[["narrative"]][[1]]$interpretation, sep="\n\n")
       )
       
+    cat(paste0("Contrasts between pairs of years for ", catg, " cover (%) at the subregion scale.
+    For each contrast, results are expressed as absolute change (`abs`) and 
+    percentage change (`frac`). Estimated average cover at the left side of the contrast 
+    (`start`) and the right side of the contrast (`end`) are also presented.  
+    Negative values indicate declines between the pairs of years. `Pl` and `Pg`
+    represent the probability of decline and increase respectively.\n"))
+    cat(":::\n")
     cat(":::\n")
   }
   cat(":::\n")
@@ -538,6 +559,7 @@ for (catg in cats) {
 
 
   cat('::: {.callout-note collapse="true"}\n#### View weights\n')
+  cat("::: {#tbl-wts}\n")
   ## wts |>
   ##   mutate(GCRMN_subregion = str_replace(GCRMN_subregion, "\\.", " ")) |>
   ##   filter(GCRMN_region == reg) |>
@@ -554,34 +576,75 @@ for (catg in cats) {
         Area=subregion_area,
         Weight = wt
       ) |>
-    knitr::kable(caption = "Subregion reef area and weights applied in the aggregation up to Region") |>
+    # knitr::kable(caption = "Subregion reef area and weights applied in the aggregation up to Region") |>
+    knitr::kable() |>
     print()
+    cat(paste0("Subregion reef area and weights applied in the aggregation up to Region.\n"))
     cat(":::\n")
+    cat(":::\n")
+
     cat("::: {.callout-note collapse=true}\n")
     cat("#### Show data behind figure\n")
+    cat("::: {#tbl-data}\n")
     summary_region_V2 |>
       filter(category == catg, region == reg) |>
       _[["cellmeans_trim"]][[1]] |>
       dplyr::select(-variable) |>
       dplyr::mutate(across(c(median, lower, upper, lower_80, upper_80), \(x) round(x * 100, 2))) |>
-      knitr::kable(caption = paste0("Estimated annual ", catg, " cover (%) at the region scale.")) |>
+      # knitr::kable(caption = paste0("Estimated annual ", catg, " cover (%) at the region scale.")) |>
+      knitr::kable() |>
       print()
+    cat(paste0("Estimated annual ", catg, " cover (%) at the region scale.\n")) 
     cat(":::\n")
+    cat(":::\n")
+
     cat("::: {.callout-note collapse=true}\n")
     cat("#### Show contrasts\n")
+    cat("::: {#tbl-contr}\n")
     contrasts_regions |>
       filter(category == catg, region == reg) |>
       _[["contrast_sum"]][[1]] |>
-      knitr::kable(caption = paste0("Contrasts between pairs of years for ", catg, " cover (%) at the region scale.
-      For each contrast, results are expressed as absolute change (`abs`) and percentage change (`frac`).  Negative values indicate declines between the pairs of years. `Pl` and `Pg`
-      represent the probability of decline and increase respectively.")) |>
+      # knitr::kable(caption = paste0("Contrasts between pairs of years for ", catg, " cover (%) at the region scale.
+      # For each contrast, results are expressed as absolute change (`abs`) and percentage change (`frac`).  Negative values indicate declines between the pairs of years. `Pl` and `Pg`
+      # represent the probability of decline and increase respectively.")) |>
+      knitr::kable() |>
       print()
     cat(paste0("- ", 
       contrasts_regions |>
         filter(category == catg, region == reg) |>
         _[["narrative"]][[1]]$interpretation, sep="\n\n")
       )
+    cat(paste0("Contrasts between pairs of years for ", catg, " cover (%) at the region scale.
+    For each contrast, results are expressed as absolute change (`abs`) and percentage 
+    change (`frac`). Estimated start and end values are also presented. Negative values 
+    indicate declines between the pairs of years. `Pl` and `Pg` represent the probability 
+    of decline and increase respectively.\n"))
     cat(":::\n")
+    cat(":::\n")
+
+    cat("::: {#tbl-summ}\n")
+    summary_tbl_region |>
+      filter(category == catg, region == reg) |>
+      _[["tbl"]][[1]] |>
+      str_replace_all("\\.\\./\\.\\./", "../") |>
+      str_replace_all("lightable-paper", "table") |>
+      cat()
+
+    cat(paste0("Change in ", catg, " cover (%) for each Subregion depicted 
+       as a simplified temporal trend as well as the direction of change (arrow) 
+       between a reference period (< 2010, red line on trends) and the 2020s 
+       (blue line on trends). Values immediately to the left and right of the 
+       arrows represent the average cover for the reference and 2020s respectively.
+       Values in brackets represent the percentage change in percentage cover 
+       between the reference and 2020s. Confidence in whether there was a change
+       in cover between the reference and 2020s is expressed as a signal strength
+       based on Bayesian exceedence probabilities (no bars: P < 0.85 (no evidence),
+       one bar: P < 0.90 (weak evidence), two bars: P < 0.95 (evidence), 
+       three bars: P < 1.00 (strong evidence), four bars P = 1.00).
+       \n")) 
+    cat(":::\n\n")
+    
 }
 ```
-  
+
+

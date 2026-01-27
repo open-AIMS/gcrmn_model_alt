@@ -521,6 +521,7 @@ aggregate_models <- function() {
             ~ case_when(
               type == "abs"  ~ 100 * .x,
               type == "frac" ~ (.x -1)*100,
+              .default = 100 * .x
               ## TRUE ~ .x
               ))) |>
           # replace the frac exceedance probs
@@ -629,9 +630,25 @@ aggregate_models <- function() {
                 cm <- make_contrast_matrix(Year, contr)
                 res_abs <- as.numeric(.x %*% cm) 
                 res_frac <- exp(as.numeric(log(.x) %*% cm))
-                data.frame(contrast = rep(colnames(cm), 2),
-                  type = rep(c("abs", "frac"), each = length(colnames(cm))),
-                  value = c(res_abs, res_frac)
+                cm_2 <- cm_1 <- cm
+                cm_1[cm_1>0] <- 0
+                cm_1[cm_1<0] <- -1 * cm_1[cm_1<0]
+                cm_2[cm_2<0] <- 0
+                res_1 <- as.numeric(.x %*% cm_1)
+                res_2 <- as.numeric(.x %*% cm_2)
+                if (sum(cm_1) == 0) {
+                  res_abs <- res_frac <- res_1 <- rep(NA, length(res_frac))
+                }
+                if (sum(cm_2) == 0) {
+                  res_abs <- res_frac <- res_2 <- rep(NA, length(res_frac))
+                }
+                ## data.frame(contrast = rep(colnames(cm), 2),
+                ##   type = rep(c("abs", "frac"), each = length(colnames(cm))),
+                ##   value = c(res_abs, res_frac)
+                ## )
+                data.frame(contrast = rep(colnames(cm), 4),
+                  type = rep(c("abs", "frac", "start", "end"), each = length(colnames(cm))),
+                  value = c(res_abs, res_frac, res_1, res_2)
                 )
               })) |>
               unnest(cols = c(value))
@@ -706,9 +723,19 @@ aggregate_models <- function() {
                 cm <- make_contrast_matrix(Year, contr)
                 res_abs <- as.numeric(.x %*% cm) 
                 res_frac <- exp(as.numeric(log(.x) %*% cm))
-                data.frame(contrast = rep(colnames(cm), 2),
-                  type = rep(c("abs", "frac"), each = length(colnames(cm))),
-                  value = c(res_abs, res_frac)
+                cm_2 <- cm_1 <- cm
+                cm_1[cm_1>0] <- 0
+                cm_1[cm_1<0] <- -1 * cm_1[cm_1<0]
+                cm_2[cm_2<0] <- 0
+                res_1 <- as.numeric(.x %*% cm_1)
+                res_2 <- as.numeric(.x %*% cm_2)
+                ## data.frame(contrast = rep(colnames(cm), 2),
+                ##   type = rep(c("abs", "frac"), each = length(colnames(cm))),
+                ##   value = c(res_abs, res_frac)
+                ## )
+                data.frame(contrast = rep(colnames(cm), 4),
+                  type = rep(c("abs", "frac", "start", "end"), each = length(colnames(cm))),
+                  value = c(res_abs, res_frac, res_1, res_2)
                 )
               })) |>
               unnest(cols = c(value))
@@ -766,9 +793,19 @@ aggregate_models <- function() {
                 cm <- make_contrast_matrix(Year, contr)
                 res_abs <- as.numeric(.x %*% cm) 
                 res_frac <- exp(as.numeric(log(.x) %*% cm))
-                data.frame(contrast = rep(colnames(cm), 2),
-                  type = rep(c("abs", "frac"), each = length(colnames(cm))),
-                  value = c(res_abs, res_frac)
+                cm_2 <- cm_1 <- cm
+                cm_1[cm_1>0] <- 0
+                cm_1[cm_1<0] <- -1 * cm_1[cm_1<0]
+                cm_2[cm_2<0] <- 0
+                res_1 <- as.numeric(.x %*% cm_1)
+                res_2 <- as.numeric(.x %*% cm_2)
+                ## data.frame(contrast = rep(colnames(cm), 2),
+                ##   type = rep(c("abs", "frac"), each = length(colnames(cm))),
+                ##   value = c(res_abs, res_frac)
+                ## )
+                data.frame(contrast = rep(colnames(cm), 4),
+                  type = rep(c("abs", "frac", "start", "end"), each = length(colnames(cm))),
+                  value = c(res_abs, res_frac, res_1, res_2)
                 )
               })) |>
               unnest(cols = c(value))
