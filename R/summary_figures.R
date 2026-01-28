@@ -1307,105 +1307,6 @@ summary_figures <- function() {
     }
     ),
 
-    ## Region tables - with each subregion
-    tar_target(summary_tbl_region_, {
-      output_path <- summary_figures_global_parameters_$output_path
-      tab_path <- paste0(output_path, "tables/")
-      sparkline_path <- paste0(output_path, "tables/sparkline/")
-      if (!dir.exists(tab_path)) dir.create(tab_path)
-      if (!dir.exists(sparkline_path)) dir.create(sparkline_path)
-      summary_tbl <- summary_tbl_
-      summary_subregions <- summary_subregion_V2_
-      contrasts_subregions <- contrasts_subregions_
-      library(kableExtra)
-      ## ---- summary_tbl_region V2
-      ## get the contasts
-      contr_subregions <-
-        contrasts_subregions |>
-        ## filter(category == "Hard coral") |>
-        mutate(long_term_change = map(
-          .x = contrast_sum,
-          .f = ~ {
-            x <- .x |>
-              ungroup() |> 
-              filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
-              dplyr::select(type, median, Pl, Pg) |>
-              mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)") 
-            x |>
-              filter(type == "frac") |>
-              mutate(start = x |> filter(type == "start") |> pull(median),
-                end = x |> filter(type == "end") |> pull(median)) |>
-              dplyr::select(-type) |>
-              dplyr::select(start, end, median, Pl, Pg, column_label)
-          })) |>
-        dplyr::select(region, subregion, category, long_term_change) |>
-        unnest(long_term_change) |>
-        arrange(region, subregion, category) |> 
-        ungroup() |>
-        group_by(region, category) |>
-        nest() 
-      
-      trends_subregions <-
-        summary_subregions |>
-        ## filter(category == "Hard coral") |>
-        dplyr::select(region, subregion, category, cellmeans_trim) |>
-        unnest(cellmeans_trim) |> 
-        ungroup() |> 
-        complete(nesting(region, subregion), category, Year) |>
-        dplyr::select(region, subregion, category, Year, median) |>
-        mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
-        mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
-        arrange(region, subregion) |> 
-        ungroup() |>
-        group_by(region, category) |>
-        nest(.key = "trend") 
-      trends_minmax <- 
-        trends_subregions |>
-        mutate(minmax = map(.x = trend,
-          .f = ~ {
-            .x |> summarise(
-              min = min(median, na.rm = TRUE),
-              max = max(median, na.rm = TRUE)) 
-          })) |>
-        dplyr::select(-trend)
-        ## as_vector()
-
-      summary_tbl_subregions <-
-        contr_subregions |>
-        left_join(trends_subregions) |>
-        left_join(trends_minmax)
-
-      summary_tbl_subregions <-
-        summary_tbl_subregions |> 
-        ## _[1,] |> 
-        mutate(tbl = pmap(.l = list(region, category, data, trend, minmax),
-          .f = ~ {
-            print(..1)
-            region <- ..1
-            category <- ..2
-            contrasts <- ..3
-            trend <- ..4
-            minmax <- as_vector(..5)
-            filenm <- paste0(tab_path, "summ_tbl_subregions_", region,"_", category, ".html")
-            tb <- summary_tbl(contrasts, trend, minmax, level = "subregion",
-              category = category,
-              sparkline_path = sparkline_path) 
-            tb |> save_kable(file = filenm)
-
-            tb1 <- summary_tbl(contrasts, trend, minmax, level = "subregion",
-              category = category,
-              format = "latex",
-              sparkline_path = sparkline_path) 
-            tb1 |> save_kable(file = str_replace(filenm, ".html", ".tex"))
-            
-            ## tb 
-            return(tb)
-          }))
-      
-      ## ----end
-      summary_tbl_subregions
-    }
-    ),
 
     ## ## Global tables - with each region
     tar_target(summary_tbl_global_, {
@@ -1529,6 +1430,145 @@ summary_figures <- function() {
         ## return(tb)
       ## ----end
       summary_tbl_regions
+    }
+    ),
+
+    ## Region tables - with each subregion
+    ## Run this one after global so that the region can be added to the bottom
+    tar_target(summary_tbl_region_, {
+      output_path <- summary_figures_global_parameters_$output_path
+      tab_path <- paste0(output_path, "tables/")
+      sparkline_path <- paste0(output_path, "tables/sparkline/")
+      if (!dir.exists(tab_path)) dir.create(tab_path)
+      if (!dir.exists(sparkline_path)) dir.create(sparkline_path)
+      summary_tbl <- summary_tbl_
+      summary_subregions <- summary_subregion_V2_
+      contrasts_subregions <- contrasts_subregions_
+      summary_tbl_global <- summary_tbl_global_
+      library(kableExtra)
+      ## ---- summary_tbl_region V2
+      add_region_to_bottom <- TRUE
+      ## get the contasts
+      contr_subregions <-
+        contrasts_subregions |>
+        ## filter(category == "Hard coral") |>
+        mutate(long_term_change = map(
+          .x = contrast_sum,
+          .f = ~ {
+            x <- .x |>
+              ungroup() |> 
+              filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              dplyr::select(type, median, Pl, Pg) |>
+              mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)") 
+            x |>
+              filter(type == "frac") |>
+              mutate(start = x |> filter(type == "start") |> pull(median),
+                end = x |> filter(type == "end") |> pull(median)) |>
+              dplyr::select(-type) |>
+              dplyr::select(start, end, median, Pl, Pg, column_label)
+          })) |>
+        dplyr::select(region, subregion, category, long_term_change) |>
+        unnest(long_term_change) |>
+        arrange(region, subregion, category) |> 
+        ungroup() |>
+        group_by(region, category) |>
+        nest() 
+      if (add_region_to_bottom) {
+        contr_subregions <-
+          contr_subregions |>
+          mutate(data = pmap(.l = list(region, category, data),
+            .f =  ~ {
+              reg <- ..1
+              catg <- ..2
+              x <- ..3
+              x |> bind_rows(summary_tbl_global |>
+                               filter(category == catg) |>
+                               _[["data"]][[1]] |>
+                               filter(region == reg) |>
+                               rename(subregion = region))
+            }))
+      }
+      
+      trends_subregions <-
+        summary_subregions |>
+        ## filter(category == "Hard coral") |>
+        dplyr::select(region, subregion, category, cellmeans_trim) |>
+        unnest(cellmeans_trim) |> 
+        ungroup() |> 
+        complete(nesting(region, subregion), category, Year) |>
+        dplyr::select(region, subregion, category, Year, median) |>
+        mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
+        arrange(region, subregion) |> 
+        ungroup() |>
+        group_by(region, category) |>
+        nest(.key = "trend") 
+      if (add_region_to_bottom) {
+        trends_subregions <-
+          trends_subregions |>
+          mutate(trend = pmap(.l = list(region, category, trend),
+            .f =  ~ {
+              reg <- ..1
+              catg <- ..2
+              x <- ..3
+              x |> bind_rows(summary_tbl_global |>
+                               filter(category == catg) |>
+                               _[["trend"]][[1]] |>
+                               filter(region == reg) |>
+                               rename(subregion = region) 
+                               )
+            }))
+      }
+
+      trends_minmax <- 
+        trends_subregions |>
+        mutate(minmax = map(.x = trend,
+          .f = ~ {
+            .x |> summarise(
+              min = min(median, na.rm = TRUE),
+              max = max(median, na.rm = TRUE)) 
+          })) |>
+        dplyr::select(-trend)
+        ## as_vector()
+
+      summary_tbl_subregions <-
+        contr_subregions |>
+        left_join(trends_subregions) |>
+        left_join(trends_minmax)
+
+      summary_tbl_subregions <-
+        summary_tbl_subregions |> 
+        ## _[1,] |> 
+        mutate(tbl = pmap(.l = list(region, category, data, trend, minmax),
+          .f = ~ {
+            print(..1)
+            region <- ..1
+            category <- ..2
+            contrasts <- ..3
+            trend <- ..4
+            minmax <- as_vector(..5)
+            filenm <- paste0(tab_path, "summ_tbl_subregions_", region,"_", category, ".html")
+            tb <- summary_tbl(contrasts, trend, minmax, level = "subregion",
+              category = category,
+              sparkline_path = sparkline_path) 
+            if (add_region_to_bottom) {
+              tb <- tb |>
+                row_spec(nrow(contrasts), extra_css = "border-top: 1px solid #909294;")
+            }
+            tb |> save_kable(file = filenm)
+
+            tb1 <- summary_tbl(contrasts, trend, minmax, level = "subregion",
+              category = category,
+              format = "latex",
+              sparkline_path = sparkline_path) 
+            tb1 |> save_kable(file = str_replace(filenm, ".html", ".tex"))
+            
+            ## tb 
+            return(tb)
+          }))
+      
+      ## ----end
+      summary_tbl_subregions
     }
     )
 

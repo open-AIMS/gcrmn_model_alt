@@ -347,6 +347,25 @@ pre.sourceCode {
     width: auto;
 }
 */
+.table {
+    width: 80%;
+    border-bottom: 1px solid #909294;
+    border-top: 1px solid #909294;
+}
+.table>thead {
+    border-bottom: 1px solid #909294;
+    border-top: 1px solid #909294;
+    vertical-align: bottom;
+}
+.table>:not(caption)>*>* {
+    padding: .2rem .2rem;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+.table>:not(caption)>*:not(:last-child)>* {
+    border-bottom-width: 0px;
+}
+
 .table-condensed {
     max-width: 100%;
     width: auto;

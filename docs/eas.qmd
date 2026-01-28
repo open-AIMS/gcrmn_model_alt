@@ -630,7 +630,7 @@ for (catg in cats) {
       str_replace_all("lightable-paper", "table") |>
       cat()
 
-    cat(paste0("Change in ", catg, " cover (%) for each Subregion depicted 
+    cat(paste0("Change in ", catg, " cover (%) for each Subregion (and Regional aggregate at the bottom) depicted 
        as a simplified temporal trend as well as the direction of change (arrow) 
        between a reference period (< 2010, red line on trends) and the 2020s 
        (blue line on trends). Values immediately to the left and right of the 
@@ -638,13 +638,13 @@ for (catg in cats) {
        Values in brackets represent the percentage change in percentage cover 
        between the reference and 2020s. Confidence in whether there was a change
        in cover between the reference and 2020s is expressed as a signal strength
-       based on Bayesian exceedence probabilities (no bars: P < 0.85 (no evidence),
-       one bar: P < 0.90 (weak evidence), two bars: P < 0.95 (evidence), 
-       three bars: P < 1.00 (strong evidence), four bars P = 1.00).
+       based on Bayesian exceedence probabilities (no bars: Pr(Δ>0) < 0.85 (no evidence),
+       one bar: Pr(Δ>0) < 0.90 (weak evidence), two bars: Pr(Δ>0) < 0.95 (evidence), 
+       three bars: Pr(Δ>0) < 1.00 (strong evidence), four bars Pr(Δ>0) = 1.00).
        \n")) 
     cat(":::\n\n")
     
 }
 ```
 
-
+ 
