@@ -243,7 +243,7 @@ benthic_posteriors_regions <- targets::tar_read("aggregate_region_plots_", store
 summary_region <- targets::tar_read("summary_region_", store = "../R/_targets")
 summary_region_V2 <- targets::tar_read("summary_region_V2_", store = "../R/_targets")
 contrasts_regions <- targets::tar_read("contrasts_regions_", store = "../R/_targets")
-summary_tbl_region <- targets::tar_read("summary_tbl_region_", store = "../R/_targets")
+region_tbls <- targets::tar_read("region_tbls_", store = "../R/_targets")
 ```
  
 ```{r}
@@ -623,7 +623,7 @@ for (catg in cats) {
     cat(":::\n")
 
     cat("::: {#tbl-summ}\n")
-    summary_tbl_region |>
+    region_tbls |>
       filter(category == catg, region == reg) |>
       _[["tbl"]][[1]] |>
       str_replace_all("\\.\\./\\.\\./", "../") |>
@@ -647,4 +647,6 @@ for (catg in cats) {
 }
 ```
 
- 
+
+
+

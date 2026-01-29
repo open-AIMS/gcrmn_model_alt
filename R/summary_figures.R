@@ -1106,6 +1106,16 @@ summary_figures <- function() {
           xlim(xlim) +
           theme_void() +
           theme(plot.margin = margin(0, 0, 0, 0))
+        trend_lengths <- df |> filter(!is.na(median)) |>
+          summarise(p1 = sum(Period_1), p2 = sum(Period_2))
+        if (trend_lengths$p1 < 2) {
+          g <- g + geom_point(data = df |> filter(Period_1),
+            size = 0.05, color = "red")
+        }
+        if (trend_lengths$p2 < 2) {
+          g <- g + geom_point(data = df |> filter(Period_2),
+            size = 0.05, color = "blue")
+        }
         if (!is_false(minmax)) {
           g <- g + ylim(minmax)
         }
@@ -1204,16 +1214,47 @@ summary_figures <- function() {
             deframe()
         }
 
-        arrow_from_value <- function(x, max_angle = 45, scale = 1) {
+        interp_rgb <- function(c1, c2, frac) {
+          gamma <- 0.35
+          frac <- pmin(frac^gamma, 1)
+          round(c1 + frac * (c2 - c1))
+        }
+        
+        arrow_from_value <- function(x, max_angle = 80, scale = 1, catg) {
           angle <- pmax(pmin(x * scale, max_angle), -max_angle)
           angle <- -1 * angle
+          angle[is.na(angle)] <- 0
+          frac  <- abs(angle) / max_angle
+          grey  <- c(150, 150, 150)
+          if (catg != "Hard coral") {
+            inc <- c(60,  180,  75)
+            dec   <- c(190, 70,   70)
+          } else {
+            dec <- c(60,  180,  75)
+            inc   <- c(190, 70,   70)
+          }
+          ## print(angle)
+          html_col <- vapply(seq_along(angle), function(i) {
+            if (angle[i] > 0) {
+              col <- interp_rgb(grey, inc, frac[i])
+            } else if (angle[i] < 0) {
+              col <- interp_rgb(grey, dec, frac[i])
+            } else {
+              col <- grey
+            }
+            sprintf("rgb(%d,%d,%d)", col[1], col[2], col[3])
+          }, character(1))
           sprintf(
-            '<span style="display:inline-block; transform: rotate(%0.1fdeg)">⟶</span>',
-            angle
+            ## '<span style="display:inline-block; transform: rotate(%0.1fdeg)">⟶</span>',
+            '<span style="display:inline-block; transform: rotate(%0.1fdeg); 
+            font-size:15pt; color:%s">%s</span>',
+            angle,
+            html_col,
+            fontawesome::fa("arrow-right-long")
           )
         } 
 
-        arrow_from_value_latex <- function(x, max_angle = 45, scale = 1) {
+        arrow_from_value_latex <- function(x, max_angle = 80, scale = 1) {
           angle <- pmax(pmin(x * scale, max_angle), -max_angle)
           angle <- -1 * angle
           sprintf(
@@ -1226,7 +1267,7 @@ summary_figures <- function() {
           tbl <- long_term_change |>
             ungroup() |> 
             mutate(Trend = "") |>
-            mutate(Direction = arrow_from_value(median, scale = 1)) |> 
+            mutate(Direction = arrow_from_value(median, scale = 1, catg = category)) |> 
             mutate(median = paste(
               sprintf("%4.1f%%", start),
               Direction,
