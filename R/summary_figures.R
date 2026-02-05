@@ -605,6 +605,7 @@ summary_figures <- function() {
       data_xgboost <- xgboost_data_
       pdp_plots <- pdp_plots_
       simple_hier_means <- fit_models_simple_hierarchical_means_
+      spatial_lookup <- spatial_lookup_
       ## ---- aggregate_ecoregion_plots
       print("Ecoregion plots")
       data_xgboost <- data_xgboost |>
@@ -635,7 +636,11 @@ summary_figures <- function() {
             SIMPLIFY = FALSE, USE.NAMES = FALSE)
         )) |>
         mutate(plot = plot[[1]]) |>
-        group_by(region, subregion, ecoregion, category)
+        group_by(region, subregion, ecoregion, category) |> 
+        left_join(spatial_lookup |>
+                    dplyr::select(subregion, subregion_name) |>
+                    distinct(),
+          by = "subregion")  
       ## ----end
       benthic_posteriors_ecoregions
     }
@@ -652,6 +657,7 @@ summary_figures <- function() {
       data_xgboost <- xgboost_data_
       pdp_plots <- pdp_plots_
       simple_hier_means <- fit_models_simple_hierarchical_means_
+      spatial_lookup <- spatial_lookup_
       ## ---- aggregate_ecoregion_plots V2
       print("Ecoregion plots V2")
       data_xgboost <- data_xgboost |>
@@ -682,7 +688,11 @@ summary_figures <- function() {
             SIMPLIFY = FALSE, USE.NAMES = FALSE)
         )) |>
         mutate(plot = plot[[1]]) |>
-        group_by(region, subregion, ecoregion, category)
+        group_by(region, subregion, ecoregion, category) |> 
+        left_join(spatial_lookup |>
+                    dplyr::select(subregion, subregion_name) |>
+                    distinct(),
+          by = "subregion")  
       ## ----end
       benthic_posteriors_ecoregions_V2
     }
@@ -741,7 +751,6 @@ summary_figures <- function() {
         )) |>
         mutate(plot = plot[[1]]) |>
         group_by(region, subregion, category)
-
       # ----end
       benthic_posteriors_subregions
     }
@@ -797,7 +806,7 @@ summary_figures <- function() {
             SIMPLIFY = FALSE, USE.NAMES = FALSE)
         )) |>
         mutate(plot = plot[[1]]) |>
-        group_by(region, subregion, category)
+        group_by(region, subregion, category) 
 
       # ----end
       benthic_posteriors_subregions_V2
@@ -1289,7 +1298,9 @@ summary_figures <- function() {
             ##   ## col.names = c("Region", "Temporal<br>trend",
             ##   ##   "Percent<br>change in cover<br>(<2010 vs 2020s)",
             ##   ##   "Confidence<br>in a change"),
-              col.names = c(stringr::str_to_title(level), "Temporal<br>trend",
+              col.names = c(
+                stringr::str_replace(stringr::str_to_title(level), "_", " "),
+                "Temporal<br>trend",
                 unique(long_term_change$column_label),
                 "Confidence<br>in a change"),
               align = c("l", "c", "c", "c"),
@@ -1379,7 +1390,7 @@ summary_figures <- function() {
               dplyr::select(-type) |>
               dplyr::select(start, end, median, Pl, Pg, column_label)
           })) |>
-        dplyr::select(region, subregion, category, long_term_change) |>
+        dplyr::select(region, subregion, subregion_name, category, long_term_change) |>
         unnest(long_term_change) |>
         arrange(region, subregion, category) |> 
         ungroup() |>
@@ -1590,7 +1601,8 @@ summary_figures <- function() {
                                filter(category == catg) |>
                                _[["data"]][[1]] |>
                                filter(region == reg) |>
-                               rename(subregion = region))
+                               rename(subregion = region) |>
+                               mutate(subregion_name = region))
             }))
       }
 
@@ -1606,7 +1618,8 @@ summary_figures <- function() {
                                filter(category == catg) |>
                                _[["trend"]][[1]] |>
                                filter(region == reg) |>
-                               rename(subregion = region) 
+                               rename(subregion = region) |>
+                               mutate(subregion_name = region)
                                )
             }))
       }
@@ -1623,7 +1636,7 @@ summary_figures <- function() {
             trend <- ..4
             minmax <- as_vector(..5)
             filenm <- paste0(tab_path, "summ_tbl_subregions_", region,"_", category, ".html")
-            tb <- summary_tbl(contrasts, trend, minmax, level = "subregion",
+            tb <- summary_tbl(contrasts, trend, minmax, level = "subregion_name",
               category = category,
               sparkline_path = sparkline_path) 
             if (add_region_to_bottom) {

@@ -149,6 +149,7 @@ aggregate_models <- function() {
       all_years <- get_all_years_
       compile_posteriors <- compile_posteriors_
       summarise_posteriors <- summarise_posteriors_
+      spatial_lookup <- spatial_lookup_
       ## ---- aggregate_compile V2
       wts <-
         wts |>
@@ -180,11 +181,22 @@ aggregate_models <- function() {
         )) |> 
         mutate(cellmeans = cellmeans[[1]]) |>
         group_by(region, subregion, ecoregion, category)
-
       ## ----end
       benthic_posteriors_V2
     }
     ),
+    tar_target(output_ecoregions_, {
+      aggregate_posteriors <- aggregate_compile_V2_
+      output_path <- fit_models_global_parameters_$output_path
+      ## ---- output_ecoregions
+      output_ecoregions <-
+        aggregate_posteriors |>
+        dplyr::select(region, subregion, ecoregion, category,
+          data_years = stan_data, stan = cellmeans)
+      saveRDS(output_ecoregions, file = paste0(output_path, "benthic_ecoregions.rds"))
+      ## ----end
+      output_ecoregions 
+    }),
 
     ## Aggregate the posteriors for all subregions 
     tar_target(wts_subregions_, {
@@ -219,6 +231,7 @@ aggregate_models <- function() {
       benthic_posteriors <- aggregate_compile_
       wts <- wts_subregions_
       summarise_posteriors <- summarise_posteriors_
+      spatial_lookup <- spatial_lookup_
       ## ---- aggregate_subregions
       benthic_posteriors_subregions <-
         benthic_posteriors |>
@@ -243,7 +256,11 @@ aggregate_models <- function() {
             mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
         )) |> 
         mutate(cellmeans = cellmeans[[1]]) |>
-        group_by(region, subregion, category) 
+        group_by(region, subregion, category) |> 
+        left_join(spatial_lookup |>
+                    dplyr::select(subregion, subregion_name) |>
+                    distinct(),
+          by = "subregion")  
       
       benthic_posteriors_subregions
       ## ----end
@@ -253,6 +270,7 @@ aggregate_models <- function() {
       benthic_posteriors_V2 <- aggregate_compile_V2_
       wts <- wts_subregions_
       summarise_posteriors <- summarise_posteriors_
+      spatial_lookup <- spatial_lookup_
       library(data.table)
       ## ---- aggregate_subregions
       benthic_posteriors_subregions_V2 <-
@@ -278,12 +296,41 @@ aggregate_models <- function() {
             mc.cores = 40, SIMPLIFY = FALSE, USE.NAMES = FALSE)
         )) |> 
         mutate(cellmeans = cellmeans[[1]]) |>
-        group_by(region, subregion, category)
-      
+        group_by(region, subregion, category) |> 
+        left_join(spatial_lookup |>
+                    dplyr::select(subregion, subregion_name) |>
+                    distinct(),
+          by = "subregion")  
       benthic_posteriors_subregions_V2
       ## ----end
     }
     ),
+    tar_target(output_subregions_, {
+      benthic_posteriors <- aggregate_compile_V2_
+      aggregate_posteriors <- aggregate_subregions_V2_
+      output_path <- fit_models_global_parameters_$output_path
+      ## ---- output_subregions
+      ## combine the stan_data
+      stan_data  <-
+        benthic_posteriors |>
+        ungroup(ecoregion) |>
+        ## group_by(region, subregion, category) |>
+        dplyr::select(region, subregion, category, stan_data) |>
+        ## filter(subregion %in% c("Caribbean 1", "Caribbean 2")) |>
+        summarise(stan_data = list(
+                    reduce(
+                      map(.x = stan_data,
+                          ~ .x[names(.x) %in% c("data_years", "all_years")]),
+                      ~ map2(.x, .y, ~ sort(unique(c(.x, .y)))))))
+      output_subregions <-
+        aggregate_posteriors |>
+        left_join(stan_data, by = c("region", "subregion", "category")) |>
+        dplyr::select(region, subregion, category,
+          data_years = stan_data, stan = cellmeans)
+      saveRDS(output_subregions, file = paste0(output_path, "benthic_subregions.rds"))
+      ## ----end
+      output_subregions 
+    }),
 
     ## Aggregate the posteriors for all regions 
     tar_target(wts_regions_, {
@@ -379,6 +426,30 @@ aggregate_models <- function() {
       ## ----end
     }
     ),
+    tar_target(output_regions_, {
+      benthic_posteriors <- aggregate_compile_V2_
+      aggregate_posteriors <- aggregate_regions_V2_
+      output_path <- fit_models_global_parameters_$output_path
+      ## ---- output_regions
+      ## combine the stan_data
+      stan_data  <-
+        benthic_posteriors |>
+        ungroup(subregion, ecoregion) |>
+        dplyr::select(region, category, stan_data) |>
+        summarise(stan_data = list(
+                    reduce(
+                      map(.x = stan_data,
+                          ~ .x[names(.x) %in% c("data_years", "all_years")]),
+                      ~ map2(.x, .y, ~ sort(unique(c(.x, .y)))))))
+      output_regions <-
+        aggregate_posteriors |>
+        left_join(stan_data, by = c("region", "category")) |>
+        dplyr::select(region, category,
+          data_years = stan_data, stan = cellmeans)
+      saveRDS(output_regions, file = paste0(output_path, "benthic_regions.rds"))
+      ## ----end
+      output_regions 
+    }),
 
     ## Aggregate the posteriors for the globe 
     tar_target(wts_global_, {
@@ -475,6 +546,30 @@ aggregate_models <- function() {
       ## ----end
     }
     ),
+    tar_target(output_global_, {
+      benthic_posteriors <- aggregate_compile_V2_
+      aggregate_posteriors <- aggregate_global_V2_
+      output_path <- fit_models_global_parameters_$output_path
+      ## ---- output_global
+      ## combine the stan_data
+      stan_data  <-
+        benthic_posteriors |>
+        ungroup(region, subregion, ecoregion) |>
+        dplyr::select(category, stan_data) |>
+        summarise(stan_data = list(
+                    reduce(
+                      map(.x = stan_data,
+                          ~ .x[names(.x) %in% c("data_years", "all_years")]),
+                      ~ map2(.x, .y, ~ sort(unique(c(.x, .y)))))))
+      output_global <-
+        aggregate_posteriors |>
+        left_join(stan_data, by = c("category")) |>
+        dplyr::select(category,
+          data_years = stan_data, stan = cellmeans)
+      saveRDS(output_global, file = paste0(output_path, "benthic_global.rds"))
+      ## ----end
+      output_global 
+    }),
 
     ## Contrasts
     tar_target(user_contrasts_, {
@@ -589,6 +684,7 @@ aggregate_models <- function() {
       express_percentage <- express_percentage_
       construct_narrative <- construct_narrative_
       contr <- user_contrasts_
+      ## spatial_lookup <- spatial_lookup_
       ## ---- contrasts_subregions
       ## extract the data years for each subregion -------------------------
       exclude_prior_years <- TRUE
@@ -672,7 +768,13 @@ aggregate_models <- function() {
           .f =  ~ .x |> express_percentage())) |> 
       ## Generate narative
         mutate(narrative = map(.x = contrast_sum,
-          .f =  ~ .x |> construct_narrative()))
+          .f =  ~ .x |> construct_narrative())) 
+      ## ## Add subregion names
+      ##   left_join(spatial_lookup |>
+      ##               dplyr::select(subregion, subregion_name) |>
+      ##               distinct(),
+      ##     by = "subregion")  
+      
       ## ----end
       contrasts_subregions
     }

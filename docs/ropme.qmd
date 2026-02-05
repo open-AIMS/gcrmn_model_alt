@@ -227,11 +227,12 @@ wts <- targets::tar_read("process_spatial_weights_", store = "../R/_targets") |>
   )
 wts_subregions <- targets::tar_read("wts_subregions_", store = "../R/_targets") 
 wts_regions <- targets::tar_read("wts_regions_", store = "../R/_targets") 
+spatial_lookup <- targets::tar_read("spatial_lookup_", store = "../R/_targets") 
 summary_subregion <- targets::tar_read("summary_subregion_", store = "../R/_targets")
 summary_subregion_V2 <- targets::tar_read("summary_subregion_V2_", store = "../R/_targets")
 contrasts_subregions <- targets::tar_read("contrasts_subregions_", store = "../R/_targets")
 ```
-
+ 
 ```{r}
 #| label: read aggregate region plots
 #| eval: true
@@ -266,7 +267,7 @@ cats <- sort(unique(dat_reg$category))
 cats <- setdiff(cats, "Other fauna")
 cats <- c(intersect(c("Hard coral", "Macroalgae"), cats),
           setdiff(cats, c("Hard coral", "Macroalgae")))
-
+ 
 for (catg in cats) {
   cat(paste0("## ", catg, "\n"))
   ## Ecoregion level =====================================================================
@@ -275,9 +276,10 @@ for (catg in cats) {
     dplyr::filter(category == catg)
   cat("::: {.panel-tabset}\n")
   for (subreg in sort(unique(dat_cat$subregion))) {
-    cat(paste0("###### ", subreg, "\n"))
     dat_subreg <- dat_cat |>
       dplyr::filter(subregion == subreg)
+    subreg_name <- dat_subreg |> pull(subregion_name) |> unique()
+    cat(paste0("###### ", subreg_name, "\n"))
     cat("::: {.panel-tabset}\n")
     for (eco in sort(unique(dat_subreg$ecoregion))) {
       cat(paste0("###### ", eco, "\n"))
@@ -444,9 +446,10 @@ for (catg in cats) {
   cat(paste0("### Subregion level\n"))
   cat("::: {.panel-tabset}\n")
   for (subreg in sort(unique(dat_cat$subregion))) {
-    cat(paste0("###### ", subreg, "\n"))
     dat_subreg <- summary_subregion |>
       dplyr::filter(category == catg, subregion == subreg)
+    subreg_name <- dat_subreg |> pull(subregion_name) |> unique()
+    cat(paste0("###### ", subreg_name, "\n"))
     fig <- dat_subreg$plot[[1]]
     fig1a <- str_replace(fig, "pdp", "pdp_a")
     fig1a_V2 <- str_replace(fig, "pdp", "pdp_a_V2")
@@ -483,9 +486,14 @@ for (catg in cats) {
     ##                 Area = area,
     ##                 Weight = wt) |>
     wts_subregions |>
+      left_join(spatial_lookup |>
+        dplyr::select(subregion, subregion_name) |>
+        distinct(),
+        by="subregion") |>
       filter(region==reg, subregion==subreg) |>
       dplyr::select(Region=region,
         Subregion=subregion,
+        Subregion_name=subregion_name,
         Ecoregion=ECOREGION,
         Area=area,
         Weight = wt
@@ -571,8 +579,13 @@ for (catg in cats) {
   ##   mutate(wt = Area / sum(Area)) |>
     wts_regions |>
       filter(region==reg) |>
+      left_join(spatial_lookup |>
+        dplyr::select(subregion, subregion_name) |>
+        distinct(),
+        by="subregion") |>
       dplyr::select(Region=region,
         Subregion=subregion,
+        Subregion_name=subregion_name,
         Area=subregion_area,
         Weight = wt
       ) |>
@@ -582,7 +595,7 @@ for (catg in cats) {
     cat(paste0("Subregion reef area and weights applied in the aggregation up to Region.\n"))
     cat(":::\n")
     cat(":::\n")
-
+   
     cat("::: {.callout-note collapse=true}\n")
     cat("#### Show data behind figure\n")
     cat("::: {#tbl-data}\n")

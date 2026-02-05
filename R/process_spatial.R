@@ -39,6 +39,8 @@ process_spatial <- function() {
 
     ## Import data ====================================================
     ## Benthic data so as to make a spatial lookup
+    ## NOTE, due to changes in data and shapefiles, this is no longer in use
+    ## the spatial lookup file is generated from the ecoregion shapefile...
     tar_target(spatial_lookup_file_, {
       primary_path <- spatial_global_parameters_$primary_path
       ## ---- spatial lookup file
@@ -49,26 +51,25 @@ process_spatial <- function() {
     },
     format = "file"
     ),
-      
-    tar_target(spatial_lookup_, {
+    tar_target(spatial_lookup_old_, {
       primary_path <- spatial_global_parameters_$primary_path
       spatial_lookup_file <- spatial_lookup_file_
-      ## ---- spatial lookup
+      ## ---- spatial lookup old
       spatial_lookup <- get(load(spatial_lookup_file)) |>
         dplyr::select(region, subregion, ecoregion) |>
         distinct()
 
-      ## PERSGA adjustments
-      spatial_lookup <- spatial_lookup |>
-        mutate(ecoregion = ifelse(subregion == "PERSGA 1", "Northern Red Sea",
-          ifelse(subregion == "PERSGA 2", "Central Red Sea",
-            as.character(ecoregion)))) |>
-        mutate(ecoregion = factor(ecoregion))
+      ## PERSGA adjustments - no longer required (2026-03-02)
+      ## spatial_lookup <- spatial_lookup |>
+      ##   mutate(ecoregion = ifelse(subregion == "PERSGA 1", "Northern Red Sea",
+      ##     ifelse(subregion == "PERSGA 2", "Central Red Sea",
+      ##       as.character(ecoregion)))) |>
+      ##   mutate(ecoregion = factor(ecoregion))
 
       ## Manually add in the ecoregions for which there are no observed data
       extra_ecoregions <- tribble(
         ~region, ~subregion, ~ecoregion,
-        "Brazil", "Brazil 4", "Amazonia",
+        "Brazil", "Brazil 5", "Amazonia",
         "East Asia", "East Asia 2", "Arafura Sea",
         "WIO", "WIO 3", "Cargado Carajos/Tromelin Island",
         "ETP", "ETP 5", "Clipperton",
@@ -92,6 +93,44 @@ process_spatial <- function() {
     }
     ),
 
+    ## GCRMN ecoregions object (from Jeremy) --------------------------
+    tar_target(gcrmn_ecoregions_file_, {
+      primary_path <- spatial_global_parameters_$primary_path
+      ## ---- gcrmn ecoregions file
+      print("Check gcrmn_ecoregion_file")
+      gcrmn_ecoregions_file <- paste0(primary_path, "gcrmn_ecoregions/",
+        "gcrmn_ecoregions.shp") 
+      ## ----end
+      gcrmn_ecoregions_file
+    },
+    format = "file"
+    ),
+    tar_target(gcrmn_ecoregions_, {
+      primary_path <- spatial_global_parameters_$primary_path
+      gcrmn_ecoregions_file <- gcrmn_ecoregions_file_
+      gcrmn_subregions <- gcrmn_subregions_
+      print("Read gcrmn_ecoregion_file")
+      ## ---- gcrmn ecoregions
+      gcrmn_ecoregions <- read_sf(gcrmn_ecoregions_file) |> 
+        dplyr::rename(subregion = subregn,
+          ecoregion = ecoregn,
+          subregion_name = sbrgn_n)
+      ## ----end
+      gcrmn_ecoregions
+    }),
+
+    tar_target(spatial_lookup_, {
+      primary_path <- spatial_global_parameters_$primary_path
+      gcrmn_ecoregions <- gcrmn_ecoregions_
+      ## ---- spatial lookup
+      spatial_lookup <-
+        gcrmn_ecoregions |>
+        sf::st_drop_geometry() 
+      ## ----end
+      spatial_lookup
+    }
+    ),
+    
     ## World map layers -----------------------------------------------
     tar_target(
       ne_countries_,
@@ -117,7 +156,9 @@ process_spatial <- function() {
       primary_path <- spatial_global_parameters_$primary_path
       gcrmn_subregions_file <- gcrmn_subregions_file_
       ## ---- gcrmn subregions
-      gcrmn_subregions <- read_sf(gcrmn_subregions_file)
+      gcrmn_subregions <- read_sf(gcrmn_subregions_file) |>
+        dplyr::rename(subregion = subregn,
+          subregion_name = sbrgn_n)
       ## ----end
       gcrmn_subregions
     }),
@@ -200,28 +241,6 @@ process_spatial <- function() {
     ##   ## ----end
     ##   grid
     ## }),
-    ## GCRMN ecoregions object (from Jeremy) --------------------------
-    tar_target(gcrmn_ecoregions_file_, {
-      primary_path <- spatial_global_parameters_$primary_path
-      ## ---- gcrmn ecoregions file
-      print("Check gcrmn_ecoregion_file")
-      gcrmn_ecoregions_file <- paste0(primary_path, "gcrmn_ecoregions/",
-        "gcrmn_ecoregions.shp") 
-      ## ----end
-      gcrmn_ecoregions_file
-    },
-    format = "file"
-    ),
-    tar_target(gcrmn_ecoregions_, {
-      primary_path <- spatial_global_parameters_$primary_path
-      gcrmn_ecoregions_file <- gcrmn_ecoregions_file_
-      gcrmn_subregions <- gcrmn_subregions_
-      print("Read gcrmn_ecoregion_file")
-      ## ---- gcrmn ecoregions
-      gcrmn_ecoregions <- read_sf(gcrmn_ecoregions_file)
-      ## ----end
-      gcrmn_ecoregions
-    }),
 
     ## ## MEOWs (ecoregions) ---------------------------------------------
     ## tar_target(meow_, {

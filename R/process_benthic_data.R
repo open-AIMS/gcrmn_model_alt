@@ -75,6 +75,7 @@ process_benthic_data <- function() {
 
     ## Process data ===================================================
     ## Process benthic data (adjust PERSGA) ---------------------------
+    ## THIS IS NO LONGER REQUIRED
     tar_target(process_benthic_data_adjust_PERSGA_, {
       benthic_data <- read_benthic_data_
       ## ---- process benthic data adjust PERSGA 
@@ -89,7 +90,8 @@ process_benthic_data <- function() {
 
     ## Process benthic data (adjust GBR) ------------------------------
     tar_target(process_benthic_data_adjust_GBR_, {
-      benthic_data <- process_benthic_data_adjust_PERSGA_
+      ## benthic_data <- process_benthic_data_adjust_PERSGA_
+      benthic_data <- read_benthic_data_
       ## ---- process benthic data adjust GBR 
       benthic_data <-
         benthic_data |>

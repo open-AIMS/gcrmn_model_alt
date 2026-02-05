@@ -276,7 +276,7 @@ fit_models <- function() {
           name = factor(name, levels = unique(name))
         ) |>
         group_by(region, subregion, ecoregion, category, name) |>
-        filter(category %in% c("Hard coral", "Macroalgae", "Algae")) |>
+        filter(category %in% c("Hard coral", "Macroalgae", "Algae", "Turf algae")) |>
         droplevels()
       ## ----end
       benthic_models
