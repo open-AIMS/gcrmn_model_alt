@@ -1701,95 +1701,6 @@ summary_figures <- function() {
                               format = "html",
                               sparkline_path,
                               sortting_order = "alphabetical") {
-        confidence <- long_term_change |>
-          signal_strength() |>
-          dplyr::select(all_of(level), Confidence) |>
-          deframe()
-        ## Although it would be nice to use level in NSE, unfortunately
-        ## this does not work in targets due to the way it pre-evaluates the
-        ## code to look for dependencies
-        ## I tried with
-        ## - .y = all_of(level)
-        ## - .y = .data[[level]]
-        ## - .[[level]]
-        ## - !!sym(level)
-        if (level == "region") {
-          sparkline <- trends |>
-            group_by(region) |>
-            nest() |> 
-            mutate(path = map2(.x = data, .y = region,
-              .f = ~ {
-                ## path <- .y
-                path <- .x |>
-                  create_sparkline(minmax = minmax, format = format,
-                    sparkline_file = paste0(sparkline_path,
-                      "sparkline_",
-                      .y, "_", category,
-                      ".png"))
-                path
-              }
-            )) |>
-            dplyr::select(-data) |>
-            unnest(path) |>
-            deframe()
-
-          doughnut <-
-            long_term_change |>
-            mutate(start_angle = cumsum(lag(wt, default = 0))) |>
-            group_by(region) |>
-            nest() |>
-            mutate(path = map2(.x = data, .y = region,
-              .f =  ~ {
-                path <- .x$wt |>
-                  wt_doughnut(start_angle = .x$start_angle,
-                    doughnut_file = paste0(str_replace(sparkline_path, "sparkline", "doughnut"),
-                      "doughnut_",
-                      .y, "_", category,
-                      ".png"))
-                path
-              })) |>
-            dplyr::select(-data) |>
-            unnest(path) |> 
-            deframe()
-        } else {
-          sparkline <- trends |>
-            group_by(subregion) |>
-            nest() |> 
-            mutate(path = map2(.x = data, .y = subregion,
-              .f = ~ {
-                ## path <- .y
-                path <- .x |>
-                  create_sparkline(minmax = minmax, format = format,
-                    sparkline_file = paste0(sparkline_path,
-                      "sparkline_",
-                      .y, "_", category,
-                      ".png"))
-                path
-              }
-            )) |>
-            dplyr::select(-data) |>
-            unnest(path) |>
-            deframe()
-          doughnut <-
-            long_term_change |>
-            mutate(start_angle = cumsum(lag(wt, default = 0))) |>
-            group_by(subregion) |>
-            nest() |>
-            mutate(path = map2(.x = data, .y = subregion,
-              .f =  ~ {
-                path <- .x$wt |>
-                  wt_doughnut(start_angle = .x$start_angle,
-                    doughnut_file = paste0(str_replace(sparkline_path, "sparkline", "doughnut"),
-                      "doughnut_",
-                      .y, "_", category,
-                      ".png"))
-                path
-              })) |>
-            dplyr::select(-data) |>
-            unnest(path) |> 
-            deframe()
-        }
-
         interp_rgb <- function(c1, c2, frac) {
           gamma <- 0.35
           frac <- pmin(frac^gamma, 1)
@@ -1839,8 +1750,8 @@ summary_figures <- function() {
           )
         }
 
-        if (format == "html") {
-          tbl <- long_term_change |>
+        ## start by sorting the long_term_change by the sortting_order
+        dat <- long_term_change |>
             ungroup() |> 
             mutate(Trend = "") |>
             mutate(change = case_when(
@@ -1852,9 +1763,9 @@ summary_figures <- function() {
             mutate(N = 1:n()) |>
             mutate(Weight = "")
           if (sortting_order == "alphabetical") {
-            sort_order <- 1:nrow(tbl)
+            sort_order <- 1:nrow(dat)
           } else if (sortting_order == "change") {
-            tbl <- tbl |> 
+            dat <- dat |> 
               mutate(median_for_order = case_when(
                 is.na(median) ~ 0,
                 N == max(N) ~ Inf,
@@ -1867,15 +1778,145 @@ summary_figures <- function() {
               )) |> 
               arrange(change_for_order, median_for_order) |> 
               dplyr::select(-median_for_order, -change_for_order) 
-            sort_order <- tbl$N
+            sort_order <- dat$N
           } else if (sorting_order == "weights") {
-            tbl <- tbl |>
+            dat <- dat |>
               arrange(desc(wt))
-            sort_order <- tbl$N
+            sort_order <- dat$N
           } else {
-            sort_order <- 1:nrow(tbl)
+            sort_order <- 1:nrow(dat)
           }
-          tbl <- tbl |> 
+
+        confidence <- #long_term_change |>
+          dat |> 
+          signal_strength() |>
+          dplyr::select(all_of(level), Confidence) |>
+          deframe()
+        ## Although it would be nice to use level in NSE, unfortunately
+        ## this does not work in targets due to the way it pre-evaluates the
+        ## code to look for dependencies
+        ## I tried with
+        ## - .y = all_of(level)
+        ## - .y = .data[[level]]
+        ## - .[[level]]
+        ## - !!sym(level)
+        minmax <- as_vector(minmax)
+        if (level == "region") {
+          sparkline <- trends |>
+            group_by(region) |>
+            nest() |> 
+            mutate(path = map2(.x = data, .y = region,
+              .f = ~ {
+                ## path <- .y
+                path <- .x |>
+                  create_sparkline(minmax = minmax, format = format,
+                    sparkline_file = paste0(sparkline_path,
+                      "sparkline_",
+                      .y, "_", category,
+                      ".png"))
+                path
+              }
+            )) |>
+            dplyr::select(-data) |>
+            unnest(path) |>
+            deframe()
+
+          doughnut <-
+            ## long_term_change |>
+            dat |> 
+            mutate(start_angle = cumsum(lag(wt, default = 0))) |>
+            group_by(region) |>
+            nest() |>
+            mutate(path = map2(.x = data, .y = region,
+              .f =  ~ {
+                path <- .x$wt |>
+                  wt_doughnut(start_angle = .x$start_angle,
+                    doughnut_file = paste0(str_replace(sparkline_path, "sparkline", "doughnut"),
+                      "doughnut_",
+                      .y, "_", category,
+                      ".png"))
+                path
+              })) |>
+            dplyr::select(-data) |>
+            unnest(path) |> 
+            deframe()
+        } else {
+          sparkline <- trends |>
+            group_by(subregion) |>
+            nest() |> 
+            mutate(path = map2(.x = data, .y = subregion,
+              .f = ~ {
+                ## path <- .y
+                path <- .x |>
+                  create_sparkline(minmax = minmax, format = format,
+                    sparkline_file = paste0(sparkline_path,
+                      "sparkline_",
+                      .y, "_", category,
+                      ".png"))
+                path
+              }
+            )) |>
+            dplyr::select(-data) |>
+            unnest(path) |>
+            deframe()
+          doughnut <-
+            ## long_term_change |>
+            dat |>
+            mutate(start_angle = cumsum(lag(wt, default = 0))) |>
+            group_by(subregion) |>
+            nest() |>
+            mutate(path = map2(.x = data, .y = subregion,
+              .f =  ~ {
+                path <- .x$wt |>
+                  wt_doughnut(start_angle = .x$start_angle,
+                    doughnut_file = paste0(str_replace(sparkline_path, "sparkline", "doughnut"),
+                      "doughnut_",
+                      .y, "_", category,
+                      ".png"))
+                path
+              })) |>
+            dplyr::select(-data) |>
+            unnest(path) |> 
+            deframe()
+        }
+
+        if (format == "html") {
+          ## tbl <- long_term_change |>
+          ##   ungroup() |> 
+          ##   mutate(Trend = "") |>
+          ##   mutate(change = case_when(
+          ##     Pl >= 0.85 | Pg >= 0.85 ~ TRUE,
+          ##     is.na(Pl) | is.na(Pg) ~ FALSE,
+          ##     .default = FALSE)) |> 
+          ##   mutate(Direction = arrow_from_value(median, scale = 1, catg = category,
+          ##     change = change)) |> 
+          ##   mutate(N = 1:n()) |>
+          ##   mutate(Weight = "")
+          ## if (sortting_order == "alphabetical") {
+          ##   sort_order <- 1:nrow(tbl)
+          ## } else if (sortting_order == "change") {
+          ##   tbl <- tbl |> 
+          ##     mutate(median_for_order = case_when(
+          ##       is.na(median) ~ 0,
+          ##       N == max(N) ~ Inf,
+          ##       .default = median)) |> 
+          ##     mutate(change_for_order = case_when(
+          ##       is.infinite(median_for_order) ~ 1,
+          ##       change & median < 0 ~ -1,
+          ##       !change | median == 0 ~ 0,
+          ##       change & median > 0 ~ 1
+          ##     )) |> 
+          ##     arrange(change_for_order, median_for_order) |> 
+          ##     dplyr::select(-median_for_order, -change_for_order) 
+          ##   sort_order <- tbl$N
+          ## } else if (sorting_order == "weights") {
+          ##   tbl <- tbl |>
+          ##     arrange(desc(wt))
+          ##   sort_order <- tbl$N
+          ## } else {
+          ##   sort_order <- 1:nrow(tbl)
+          ## }
+          tbl <- dat |> #tbl |> 
             select(-N) |> 
             mutate(median = case_when(
               change ~
@@ -1921,9 +1962,9 @@ summary_figures <- function() {
               align = c("l", "c", "c", "c"),
               escape = FALSE
             ) |> 
-            column_spec(5, image = spec_image(confidence[sort_order], width = 100, height = 100)) |> 
-            column_spec(4, image = spec_image(doughnut[sort_order], width = 150, height = 150)) |> 
-            column_spec(2, image = spec_image(sparkline[sort_order], width = 300, height = 100)) |> 
+            column_spec(5, image = spec_image(confidence, width = 100, height = 100)) |> 
+            column_spec(4, image = spec_image(doughnut, width = 150, height = 150)) |> 
+            column_spec(2, image = spec_image(sparkline, width = 300, height = 100)) |> 
             kable_paper(full_width = FALSE)
         } else {
           confidence <- gsub(".svg", ".png", confidence)
@@ -1999,8 +2040,8 @@ summary_figures <- function() {
           .f = ~ {
             x <- .x |>
               ungroup() |> 
-              ## filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
-              filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
+              filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              ## filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
               dplyr::select(type, median, Pl, Pg) |>
               ## mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)") 
               mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)") 
@@ -2030,8 +2071,8 @@ summary_figures <- function() {
         ungroup() |> 
         complete(nesting(region, subregion), category, Year) |>
         dplyr::select(region, subregion, category, Year, median) |>
-        ## mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
-        mutate(Period_1 = ifelse(Year > 1973 & Year < 1998, TRUE, FALSE)) |> 
+        mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        ## mutate(Period_1 = ifelse(Year > 1973 & Year < 1998, TRUE, FALSE)) |> 
         mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
         arrange(region, subregion) |> 
         ungroup() |>
@@ -2080,8 +2121,8 @@ summary_figures <- function() {
             x <- .x |>
               ungroup() |> 
               ## filter(contrast == "2000s vs 2020s", type == "frac") |>
-              ## filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
-              filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
+              filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              ## filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
               dplyr::select(type, median, Pl, Pg) |>
               ## mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)")
               mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)")
@@ -2111,8 +2152,8 @@ summary_figures <- function() {
         ungroup() |> 
         complete(region, category, Year) |>
         dplyr::select(region, category, Year, median) |>
-        ## mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
-        mutate(Period_1 = ifelse(Year > 1973 & Year < 1998, TRUE, FALSE)) |> 
+        mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        ## mutate(Period_1 = ifelse(Year > 1973 & Year < 1998, TRUE, FALSE)) |> 
         mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
         arrange(region) |> 
         ungroup() |>
@@ -2160,8 +2201,8 @@ summary_figures <- function() {
             x <- .x |>
               ungroup() |> 
               ## filter(contrast == "2000s vs 2020s", type == "frac") |>
-              ## filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
-              filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
+              filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              ## filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
               dplyr::select(type, median, Pl, Pg) |>
               ## mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)")
               mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)")
@@ -2188,8 +2229,8 @@ summary_figures <- function() {
         ungroup() |> 
         complete(category, Year) |>
         dplyr::select(category, Year, median) |>
-        ## mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
-        mutate(Period_1 = ifelse(Year > 1973 & Year < 1998, TRUE, FALSE)) |> 
+        mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        ## mutate(Period_1 = ifelse(Year > 1973 & Year < 1998, TRUE, FALSE)) |> 
         mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
         ## arrange(region) |> 
         ungroup() |>
@@ -2279,7 +2320,9 @@ summary_figures <- function() {
             filenm <- paste0(tab_path, "summ_tbl_subregions_", region,"_", category, ".html")
             tb <- summary_tbl(contrasts, trend, minmax, level = "subregion_name",
               category = category,
-              sparkline_path = sparkline_path) 
+              sparkline_path = sparkline_path,
+              sortting_order = "change"
+              ) 
             if (add_region_to_bottom) {
               tb <- tb |>
                 row_spec(nrow(contrasts), extra_css = "border-top: 1px solid #909294;")
@@ -2358,7 +2401,9 @@ summary_figures <- function() {
             filenm <- paste0(tab_path, "summ_tbl_regions_", global,"_", category, ".html")
             tb <- summary_tbl(contrasts, trend, minmax, level = "region",
               category = category,
-              sparkline_path = sparkline_path) 
+              sparkline_path = sparkline_path,
+              sortting_order = "change"
+              ) 
             if (add_global_to_bottom) {
               tb <- tb |>
                 row_spec(nrow(contrasts), extra_css = "border-top: 1px solid #909294;")
