@@ -96,6 +96,11 @@ process_benthic_data <- function() {
       benthic_data <-
         benthic_data |>
         filter(!(ecoregion == "Central and Southern Great Barrier Reef" & year < 1993)) |>
+        filter(!(ecoregion == "Houtman" & datasetID == "d4992")) |>  ## for testing purposes
+        filter(!(ecoregion == "West Caroline Islands" & datasetID == "d4992" & year < 2000)) |>  ## for testing purposes
+        filter(!(ecoregion == "Vanuatu" & datasetID == "d4992" & year < 2005)) |>  ## for testing purposes
+        filter(!(ecoregion == "Gilbert/Ellis Islands" & datasetID == "d4992" & year < 2012)) |>  ## for testing purposes
+        filter(!(ecoregion == "Samoa Islands" & datasetID == "d4992" & year < 2000)) |>  ## for testing purposes
         droplevels()
       ## ----end
       benthic_data

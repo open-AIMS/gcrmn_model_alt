@@ -141,6 +141,33 @@ fit_models <- function() {
         init_cover <- binomial()$linkfun(data |> filter(Year ==  min(Year)) |>
                                          droplevels() |>
                                          summarise(avCover =  mean(Cover)) |> as.numeric())
+        init_sd <- data |> filter(Year == min(Year)) |>
+          droplevels() |>
+          summarise(sdCover = sd(Cover),
+            n = n()) |>
+          mutate(sd = case_when(
+            is.na(sd) ~ 1,
+            n < 10 ~ 1,
+            .default = 0
+          )) |> pull(sd)
+
+        last_year <- data |>
+          filter(Year ==  max(Year)) |>
+          pull(Year) |>
+          unique()
+        last_year <- which(last_year ==  all_years)
+        last_cover <- binomial()$linkfun(data |> filter(Year ==  max(Year)) |>
+                                           droplevels() |>
+                                           summarise(avCover =  mean(Cover)) |> as.numeric())
+        last_sd <- data |> filter(Year == max(Year)) |>
+          droplevels() |>
+          summarise(sdCover = sd(Cover),
+            n = n()) |>
+          mutate(sd = case_when(
+            is.na(sd) ~ 1,
+            n < 10 ~ 1,
+            .default = 0
+          )) |> pull(sd)
         non_init_year <- (1:length(all_years))[-init_year]
         between_years <- gap_years[gap_years < max(data_years)]
         after_years <- post_years[post_years > max(data_years)]
@@ -222,6 +249,10 @@ fit_models <- function() {
           post_years =  post_years,
           init_year =  init_year,
           init_cover =  init_cover,
+          init_sd = init_sd,
+          last_year =  last_year,
+          last_cover =  last_cover,
+          last_sd = last_sd,
           n_gap_years =  length(gap_years),
           gap_years =  gap_years,
           n_after_years =  length(after_years),
@@ -302,8 +333,9 @@ fit_models <- function() {
               nm
             })) 
       } else {
-        model_stan <- cmdstanr::cmdstan_model(stan_file =  "gcrmn_model.stan")
-        print(paste0("run again: ", run_again))
+        ## model_stan <- cmdstanr::cmdstan_model(stan_file =  "gcrmn_model.stan")
+        model_stan <- cmdstanr::cmdstan_model(stan_file =  "gcrmn_model_init_prior_test.stan")
+        print(paste0("run model again: ", run_again))
         options(future.globals.maxSize = 2 * 1024^3)
         old_plan <- future::plan(future::multisession, workers = 20)
         results <- furrr::future_map2(.x = benthic_models$stan_data,

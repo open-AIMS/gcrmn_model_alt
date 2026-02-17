@@ -212,6 +212,11 @@ summary_figures <- function() {
           g1,
           width =  6, height =  4, dpi =  72
         ) |> suppressWarnings() |> suppressMessages()
+        ggsave(
+          filename = str_replace(nm0, "png", "_hr.png"),
+          g1,
+          width =  6, height =  4, dpi =  500
+        ) |> suppressWarnings() |> suppressMessages()
 
         g0 <- g1
         
@@ -249,6 +254,11 @@ summary_figures <- function() {
           filename = nm0a,
           g1a,
           width =  6, height =  4, dpi =  72
+        ) |> suppressWarnings() |> suppressMessages()
+        ggsave(
+          filename = str_replace(nm0a, "png", "_hr.png"),
+          g1a,
+          width =  6, height =  4, dpi =  500
         ) |> suppressWarnings() |> suppressMessages()
 
         g0a <- g1a
@@ -812,6 +822,488 @@ summary_figures <- function() {
       benthic_posteriors_subregions_V2
     }
     ),
+    ## tar_target(pdp_plots_algaes_, {
+    ##   interpolate_values <- interpolate_values_
+    ##   output_path <- summary_figures_global_parameters_$output_path
+    ##   stan_partial_plot <- stan_partial_plot_
+    ##   ## ---- stan partial plot function
+    ##   pdp_plots_algaes <- function(cellmeans, dat, stan_data, name,
+    ##                         simple_means =  NA,
+    ##                         xgboost_models = NULL, stan_models = NULL,
+    ##                         type = "cellmeans_years", .scale = "ecoregion",
+    ##                         final_year = 2024) {
+    ##     ## xgboost_models <- more_args[1]
+    ##     ## stan_models <- more_args[2]
+    ##     ## type <- more_args[3]
+    ##     ## .scale <- more_args[4]
+    ##     title <- str_replace_all(name, "_", " ")
+    ##     ytitle <- str_replace(name, ".*_(.*)", "\\1")
+    ##     figure_path <- paste0(output_path, "figures/", .scale, "/")
+    ##     ## Start with Macroalgae
+    ##     stan_data_ma <- stan_data |> filter(category == "Macroalgae") |>
+    ##       _[["stan_data"]]
+    ##     first_year_ma <- stan_data_ma$all_years[stan_data_ma$data_years[1]]
+    ##     stan_data_ta <- stan_data |> filter(category == "Turf algae") |>
+    ##       _[["stan_data"]]
+    ##     first_year_ta <- stan_data_ta$all_years[stan_data_ta$data_years[1]]
+
+        
+    ##     if (type == "cellmeans_years") {
+    ##       ## (g0) Bayes only, full year range, no data, no simple means
+    ##       nm0 <- paste0(figure_path, .scale, "_pdp_bayes_V2_", "_", name, ".png")
+    ##       ## (g0a) Bayes, trimmed year range, no data, no simple means
+    ##       nm0a <- paste0(figure_path, .scale, "_pdp_bayes_a_V2_", "_", name, ".png")
+    ##     } else {
+    ##       ## (g0) Bayes only, full year range, no data, no simple means
+    ##       nm0 <- paste0(figure_path, .scale, "_pdp_bayes_", "_", name, ".png")
+    ##       ## (g0a) Bayes, trimmed year range, no data, no simple means
+    ##       nm0a <- paste0(figure_path, .scale, "_pdp_bayes_a_", "_", name, ".png")
+    ##     }
+    ##     cellmeans_ma <- cellmeans |> filter(category == "Macroalgae") 
+    ##     cellmeans_ta <- cellmeans |> filter(category == "Turf algae") 
+    ##     ## plot without raw points
+    ##     g1 <- stan_partial_plot(cellmeans_ma, stan_data_ma,
+    ##       data = NULL,
+    ##       title = title,
+    ##       ytitle = ytitle,
+    ##       include_raw = FALSE)
+    ##     g1_A <- stan_partial_plot(cellmeans_ta, stan_data_ta,
+    ##       data = NULL,
+    ##       title = title,
+    ##       ytitle = ytitle,
+    ##       include_raw = FALSE)
+    ##     g1 <- g1 +
+    ##       theme(panel.grid.major.y = element_line(),
+    ##         panel.grid.minor.y = element_line(),
+    ##         panel.grid.major.x = element_line()
+    ##       )
+
+        
+    ##     ## Bayes only, full year range, no data, no simple means
+    ##     ggsave(
+    ##       filename = nm0,
+    ##       g1,
+    ##       width =  6, height =  4, dpi =  72
+    ##     ) |> suppressWarnings() |> suppressMessages()
+    ##     ggsave(
+    ##       filename = str_replace(nm0, "png", "_hr.png"),
+    ##       g1,
+    ##       width =  6, height =  4, dpi =  500
+    ##     ) |> suppressWarnings() |> suppressMessages()
+
+    ##     g0 <- g1
+        
+    ##     if (!any(str_detect(name, setdiff(xgboost_models, stan_models))) &
+    ##           !is.null(xgboost)) {
+    ##       g1 <- g1 +
+    ##         geom_ribbon(data = xgboost, inherit.aes = FALSE,
+    ##           aes(y = mean, x = year,
+    ##             ymin = lower_ci_95, ymax = upper_ci_95),
+    ##           color = NA, fill = "blue", alpha = 0.5) +
+    ##         geom_line(data = xgboost, inherit.aes = FALSE,
+    ##           aes(y = mean, x = year), colour = "blue")
+    ##     }
+    ##     ## Bayes + xgboost (where available), full year range, no data, no simple means
+    ##     ggsave(
+    ##       filename = nm,
+    ##       g1,
+    ##       width =  6, height =  4, dpi =  72
+    ##     ) |> suppressWarnings() |> suppressMessages()
+
+    ##     ## Now a version trimmed to minium data year
+    ##     g1a <- stan_partial_plot(
+    ##       cellmeans,
+    ##       stan_data,
+    ##       data = NULL,
+    ##       title = title,
+    ##       ytitle = ytitle,
+    ##       include_raw = FALSE,
+    ##       ## min_year = min(dat$Year))
+    ##       min_year = first_year,
+    ##       max_year = final_year)
+
+    ##     ## Bayes, trimmed year range, no data, no simple means
+    ##     ggsave(
+    ##       filename = nm0a,
+    ##       g1a,
+    ##       width =  6, height =  4, dpi =  72
+    ##     ) |> suppressWarnings() |> suppressMessages()
+    ##     ggsave(
+    ##       filename = str_replace(nm0a, "png", "_hr.png"),
+    ##       g1a,
+    ##       width =  6, height =  4, dpi =  500
+    ##     ) |> suppressWarnings() |> suppressMessages()
+
+    ##     g0a <- g1a
+        
+    ##     if (!any(str_detect(name, setdiff(xgboost_models, stan_models))) &
+    ##           !is.null(xgboost)) {
+    ##       ## Now a version trimmed to minium data year
+    ##       g1a <- g1a +
+    ##         geom_ribbon(data = xgboost |> filter(year >= first_year) |> droplevels(),
+    ##           inherit.aes = FALSE,
+    ##           aes(y = mean, x = year,
+    ##             ymin = lower_ci_95, ymax = upper_ci_95),
+    ##           color = NA, fill = "blue", alpha = 0.5) +
+    ##         geom_line(data = xgboost |> filter(year >= first_year) |> droplevels(),
+    ##           inherit.aes = FALSE,
+    ##           aes(y = mean, x = year), colour = "blue")
+    ##     }
+    ##     ## Bayes + xgboost (where available), trimmed year range, no data, no simple means
+    ##     ggsave(
+    ##       filename = nma,
+    ##       g1a,
+    ##       width =  6, height =  4, dpi =  72
+    ##     ) |> suppressWarnings() |> suppressMessages()
+
+    ##     if (.scale == "ecoregion") {
+    ##       g2 <- stan_partial_plot(cellmeans, stan_data,
+    ##         data = dat,
+    ##         title = title,
+    ##         ytitle = ytitle,
+    ##         include_raw = TRUE)
+    ##       ## Bayes, full year range, with data, no simple means
+    ##       ggsave(
+    ##         filename = nm2,
+    ##         g2,
+    ##         width =  6, height =  4, dpi =  72
+    ##       ) |> suppressWarnings() |> suppressMessages()
+          
+    ##       g2a <- stan_partial_plot(
+    ##         cellmeans,
+    ##         stan_data,
+    ##         data = dat,
+    ##         title = title,
+    ##         ytitle = ytitle,
+    ##         include_raw = TRUE,
+    ##         min_year = min(dat$Year),
+    ##         max_year = final_year)
+    ##       ## Bayes, trimmed year range, with data, no simple means
+    ##       ggsave(
+    ##         filename = nm2a,
+    ##         g2a,
+    ##         width =  6, height =  4, dpi =  72
+    ##       ) |> suppressWarnings() |> suppressMessages()
+
+    ##       if (!any(str_detect(name, setdiff(xgboost_models, stan_models))) &
+    ##             !is.null(xgboost)){
+    ##         g3 <- g2 +
+    ##           geom_ribbon(data = xgboost, inherit.aes = FALSE,
+    ##             aes(y = mean, x = year,
+    ##               ymin = lower_ci_95, ymax = upper_ci_95),
+    ##             color = NA, fill = "blue", alpha = 0.5) +
+    ##           geom_line(data = xgboost, inherit.aes = FALSE,
+    ##             aes(y = mean, x = year), colour = "blue")
+    ##         ## Bayes + xgboost, full year range, with data, no simple means
+    ##         ggsave(
+    ##           filename = nm3,
+    ##           g3,
+    ##           width =  6, height =  4, dpi =  72
+    ##         ) |> suppressWarnings() |> suppressMessages()
+          
+    ##         g3a <- g2a +
+    ##           geom_ribbon(data = xgboost |> filter(year >= min(dat$Year)) |> droplevels(),
+    ##             inherit.aes = FALSE,
+    ##             aes(y = mean, x = year,
+    ##               ymin = lower_ci_95, ymax = upper_ci_95),
+    ##             color = NA, fill = "blue", alpha = 0.5) +
+    ##           geom_line(data = xgboost |> filter(year >= min(dat$Year)) |> droplevels(),
+    ##             inherit.aes = FALSE,
+    ##             aes(y = mean, x = year), colour = "blue")
+    ##         ## Bayes + xgboost, full year range, with data, no simple means
+    ##         ggsave(
+    ##           filename = nm3a,
+    ##           g3a,
+    ##           width =  6, height =  4, dpi =  72
+    ##         ) |> suppressWarnings() |> suppressMessages()
+    ##       }
+          
+    ##       if (!any(is.na(simple_means))) {
+    ##         ## Add the simple means
+    ##         simple_means <- simple_means |>
+    ##           mutate(across(c(mean, median, smean, smedian), \(x) x/100)) |>
+    ##           filter(as.numeric(as.character(cYear)) <= final_year) |>
+    ##           droplevels()
+    ##         g1 <- g1 +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##               color = "simple mean")) +
+    ##           geom_point(data = simple_means,
+    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##               color = "simple mean")) +
+
+    ##           geom_line(data = simple_means,
+    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. mean")) +
+    ##           geom_point(data = simple_means,
+    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. mean")) +
+
+    ##           geom_point(data = simple_means,
+    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##               color = "simple median")) +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##               color = "simple median")) +
+
+    ##           geom_point(data = simple_means,
+    ##             aes(y = median, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. median")) +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = median, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. median")) 
+
+    ##         ## Bayes + xgboost, full year range, no data, simple means
+    ##         ggsave(
+    ##           filename = nm5,
+    ##           g1,
+    ##           width =  6, height =  4, dpi =  72
+    ##         ) |> suppressWarnings() |> suppressMessages()
+    ##         g0a <- g0a +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##               color = "simple mean")) +
+    ##           geom_point(data = simple_means,
+    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##               color = "simple mean")) +
+
+    ##           geom_line(data = simple_means,
+    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. mean")) +
+    ##           geom_point(data = simple_means,
+    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. mean")) +
+
+    ##           geom_point(data = simple_means,
+    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##               color = "simple median")) +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##               color = "simple median")) +
+
+    ##           geom_point(data = simple_means,
+    ##             aes(y = median, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. median")) +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = median, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. median")) 
+    ##         ## Bayes, full year range, no data, simple means
+    ##         ggsave(
+    ##           filename = nm6a,
+    ##           g0a,
+    ##           width =  6, height =  4, dpi =  72
+    ##         ) |> suppressWarnings() |> suppressMessages()
+
+    ##         g1a <- g1a +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##               color = "simple mean")) +
+    ##           geom_point(data = simple_means,
+    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##               color = "simple mean")) +
+
+    ##           geom_line(data = simple_means,
+    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. mean")) +
+    ##           geom_point(data = simple_means,
+    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. mean")) +
+
+    ##           geom_point(data = simple_means,
+    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##               color = "simple median")) +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##               color = "simple median")) +
+
+    ##           geom_point(data = simple_means,
+    ##             aes(y = median, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. median")) +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = median, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. median")) 
+    ##         ## Bayes, trimmed year range, no data, simple means
+    ##         ggsave(
+    ##           filename = nm5a,
+    ##           g1a,
+    ##           width =  6, height =  4, dpi =  72
+    ##         ) |> suppressWarnings() |> suppressMessages()
+              
+    ##         g7a <- g2a +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##               color = "simple mean")) +
+    ##           geom_point(data = simple_means,
+    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##               color = "simple mean")) +
+
+    ##           geom_line(data = simple_means,
+    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. mean")) +
+    ##           geom_point(data = simple_means,
+    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. mean")) +
+
+    ##           geom_point(data = simple_means,
+    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##               color = "simple median")) +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##               color = "simple median")) +
+
+    ##           geom_point(data = simple_means,
+    ##             aes(y = median, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. median")) +
+    ##           geom_line(data = simple_means,
+    ##             aes(y = median, x = as.numeric(as.character(cYear)),
+    ##               color = "hier. median")) 
+    ##         ## Bayes, trimmed year range, with data, simple means
+    ##         ggsave(
+    ##           filename = nm7a,
+    ##           g7a,
+    ##           width =  6, height =  4, dpi =  72
+    ##         ) |> suppressWarnings() |> suppressMessages()
+
+    ##         if (!any(str_detect(name, setdiff(xgboost_models, stan_models))) &
+    ##               !is.null(xgboost)){
+    ##           g4 <- g3 +
+    ##             geom_line(data = simple_means,
+    ##               aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##                 color = "simple mean")) +
+    ##             geom_point(data = simple_means,
+    ##               aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##                 color = "simple mean")) +
+    ##             geom_line(data = simple_means,
+    ##               aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##                 color = "hier. mean")) +
+    ##             geom_point(data = simple_means,
+    ##               aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##                 color = "hier. mean")) +
+    ##             geom_point(data = simple_means,
+    ##               aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##                 color = "simple median")) +
+    ##             geom_line(data = simple_means,
+    ##               aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##                 color = "simple median")) +
+    ##             geom_point(data = simple_means,
+    ##               aes(y = median, x = as.numeric(as.character(cYear)),
+    ##                 color = "hier. median")) +
+    ##             geom_line(data = simple_means,
+    ##               aes(y = median, x = as.numeric(as.character(cYear)),
+    ##                 color = "hier. median")) 
+    ##           ## Bayes + xgboost, full year range, with data, simple means
+    ##           ggsave(
+    ##             filename = nm4,
+    ##             g4,
+    ##             width =  6, height =  4, dpi =  72
+    ##           ) |> suppressWarnings() |> suppressMessages()
+
+    ##           g4a <- g3a +
+    ##             geom_line(data = simple_means,
+    ##               aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##                 color = "simple mean")) +
+    ##             geom_point(data = simple_means,
+    ##               aes(y = smean, x = as.numeric(as.character(cYear)),
+    ##                 color = "simple mean")) +
+    ##             geom_line(data = simple_means,
+    ##               aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##                 color = "hier. mean")) +
+    ##             geom_point(data = simple_means,
+    ##               aes(y = mean, x = as.numeric(as.character(cYear)),
+    ##                 color = "hier. mean")) +
+    ##             geom_point(data = simple_means,
+    ##               aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##                 color = "simple median")) +
+    ##             geom_line(data = simple_means,
+    ##               aes(y = smedian, x = as.numeric(as.character(cYear)),
+    ##                 color = "simple median")) +
+    ##             geom_point(data = simple_means,
+    ##               aes(y = median, x = as.numeric(as.character(cYear)),
+    ##                 color = "hier. median")) +
+    ##             geom_line(data = simple_means,
+    ##               aes(y = median, x = as.numeric(as.character(cYear)),
+    ##                 color = "hier. median")) 
+    ##           ## Bayes + xgboost, trimmed year range, with data, simple means
+    ##           ggsave(
+    ##             filename = nm4a,
+    ##             g4a,
+    ##             width =  6, height =  4, dpi =  72
+    ##           ) |> suppressWarnings() |> suppressMessages()
+    ##         }
+    ##       }
+          
+    ##     }
+
+    ##     nm
+    ##   }
+    ##   ## ----end
+    ##   pdp_plots_algaes
+    ## }),
+    ## tar_target(aggregate_subregion_plots_V2_2_, {
+    ##   benthic_posteriors <- aggregate_compile_V2_
+    ##   benthic_posteriors_subregions_V2 <- aggregate_subregions_V2_
+    ##   data_path <- summary_figures_global_parameters_$data_path
+    ##   output_path <- summary_figures_global_parameters_$output_path
+    ##   wts <- process_spatial_weights_
+    ##   all_years <- get_all_years_
+    ##   interpolate_values <- interpolate_values_
+    ##   stan_partial_plot <- stan_partial_plot_
+    ##   ## benthic_models <- fit_models_stan_predict_
+    ##   data_xgboost <- xgboost_data_
+    ##   pdp_plots <- pdp_plots_
+    ##   ## ---- aggregate_subregion_plots 2
+    ##   ## data_xgboost <- data_xgboost |>
+    ##   ##   filter(!is.na(subregion), is.na(ecoregion)) |>
+    ##   ##   droplevels() |>
+    ##   ##   mutate(across(c(mean, lower_ci_95, upper_ci_95), function(x) x/100)) |>
+    ##   ##   group_by(region, subregion, ecoregion, category) |>
+    ##   ##   nest(.key = "xgboost")
+    ##   ## combine the stan_data
+    ##   stan_data  <-
+    ##     benthic_posteriors |>
+    ##     filter(!category %in% c("Hard coral", "Algae")) |> 
+    ##     ungroup(ecoregion) |>
+    ##     ## group_by(region, subregion, category) |>
+    ##     dplyr::select(region, subregion, category, stan_data) |>
+    ##     ## filter(subregion %in% c("Caribbean 1", "Caribbean 2")) |>
+    ##     summarise(stan_data = list(
+    ##                 reduce(
+    ##                   map(.x = stan_data,
+    ##                       ~ .x[names(.x) %in% c("data_years", "all_years")]),
+    ##                   ~ map2(.x, .y, ~ sort(unique(c(.x, .y))))))) |>
+    ##     unnest(stan_data) |>
+    ##     nest(.key = "stan_data")
+    ##   ## xgboost_models <- data_xgboost |> pull(subregion) |> unique() |> sort()
+    ##   ## stan_models <- benthic_posteriors_subregions_V2 |> pull(subregion) |> unique() |> sort()
+        
+    ##   benthic_posteriors_subregions_V2_2 <-
+    ##     benthic_posteriors_subregions_V2 |>
+    ##     filter(!category %in% c("Hard coral", "Algae")) |> 
+    ##     dplyr::select(-posteriors) |>
+    ##     unnest(cellmeans) |>
+    ##     ungroup(category) |>
+    ##     nest(.key = "cellmeans") |> 
+    ##     left_join(stan_data, by = c("region", "subregion")) |>
+    ##     ## left_join(data_xgboost,
+    ##     ##           by = c("region", "subregion", "category")) |>
+    ##     mutate(name = paste(subregion, "algaes", sep = "_")) |>
+    ##     mutate(plot = list(
+    ##       parallel::mcmapply(FUN = pdp_plots_algaes,
+    ##         cellmeans, dat = data.frame(a = 1), stan_data, name, xgboost,
+    ##         simple_means = NA,
+    ##         MoreArgs = list(
+    ##           stan_models = stan_models,
+    ##           type = "cellmeans_years", .scale = "subregion"),
+    ##         mc.cores = 40,
+    ##         SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    ##     )) |>
+    ##     mutate(plot = plot[[1]]) |>
+    ##     group_by(region, subregion, category) 
+
+    ##   # ----end
+    ##   benthic_posteriors_subregions_V2
+    ## }
+    ## ),
     tar_target(summary_subregion_, {
       benthic_posteriors_subregion <- aggregate_subregion_plots_
       summarise_info <- summarise_info_
@@ -1152,7 +1644,8 @@ summary_figures <- function() {
             median > 0 & Pg < 1 ~ "../../docs/resources/antenna-bars-4.svg",
             median < 0 & Pl < 1 ~ "../../docs/resources/antenna-bars-4.svg",
             median > 0 & Pg == 1 ~ "../../docs/resources/antenna-bars-5.svg",
-            median < 0 & Pl == 1 ~ "../../docs/resources/antenna-bars-5.svg"
+            median < 0 & Pl == 1 ~ "../../docs/resources/antenna-bars-5.svg",
+            .default = "../../docs/resources/antenna-bars-1.svg"
           )) |>
           ungroup() ## |> 
           ## dplyr::select(region, Confidence) |>
@@ -1161,16 +1654,53 @@ summary_figures <- function() {
       ## ----end
       signal_strength 
     }),
+    tar_target(wt_doughnut_, {
+      ## ---- create wt doughnut function
+      wt_doughnut <- function(wt, start_angle = 0, format = "html", doughnut_file) {
+        df <- data.frame(cat = c("focal", "other"),
+          fraction = c(wt, 1-wt),
+          cummulative = c(start_angle, start_angle + wt)
+          )
+        g <-
+          df |> ggplot(aes(x = 2, y = fraction, fill = cat)) +
+          geom_bar(stat = "identity", width = 1, color = "white", linewidth = 0.1) +
+          coord_polar(theta = "y", start = 2 * pi * start_angle, direction = -1) +
+          xlim(0.5, 2.5) +
+          theme_void() +
+          theme(legend.position = "none",
+            plot.margin = margin(0, 0, 0, 0),
+            plot.title = element_text(size = 6, hjust = 0.5)
+          )
+        if (!is.na(wt))
+          g <- g + ggtitle(round(wt, 3))
+          ## annotate("text",
+          ##   x = 0.5,
+          ##   y = 0,
+          ##   label = round(wt,2),
+          ##   size = 3,
+          ##   fontface = "bold")
+        
+        filenm <- paste0(doughnut_file)
+        ggsave(file = filenm, plot = g, width = 100, height = 100, units = "px", dpi = 300) |>
+          suppressWarnings() |> suppressMessages()
+        print(filenm)
+        return(str_replace(filenm, "../", "../../"))
+      }
+      ## ----end
+     wt_doughnut 
+    }),
     tar_target(summary_tbl_, {
       create_sparkline <- create_sparkline_
       signal_strength <- signal_strength_
+      wt_doughnut <- wt_doughnut_
       ## aggregate_regions <- aggregate_regions_V2_
       library(kableExtra)
       ## ---- summary_tbl_ function
       summary_tbl <- function(long_term_change, trends, minmax, level = "region",
                               category,
                               format = "html",
-                              sparkline_path) {
+                              sparkline_path,
+                              sortting_order = "alphabetical") {
         confidence <- long_term_change |>
           signal_strength() |>
           dplyr::select(all_of(level), Confidence) |>
@@ -1202,6 +1732,25 @@ summary_figures <- function() {
             dplyr::select(-data) |>
             unnest(path) |>
             deframe()
+
+          doughnut <-
+            long_term_change |>
+            mutate(start_angle = cumsum(lag(wt, default = 0))) |>
+            group_by(region) |>
+            nest() |>
+            mutate(path = map2(.x = data, .y = region,
+              .f =  ~ {
+                path <- .x$wt |>
+                  wt_doughnut(start_angle = .x$start_angle,
+                    doughnut_file = paste0(str_replace(sparkline_path, "sparkline", "doughnut"),
+                      "doughnut_",
+                      .y, "_", category,
+                      ".png"))
+                path
+              })) |>
+            dplyr::select(-data) |>
+            unnest(path) |> 
+            deframe()
         } else {
           sparkline <- trends |>
             group_by(subregion) |>
@@ -1221,6 +1770,24 @@ summary_figures <- function() {
             dplyr::select(-data) |>
             unnest(path) |>
             deframe()
+          doughnut <-
+            long_term_change |>
+            mutate(start_angle = cumsum(lag(wt, default = 0))) |>
+            group_by(subregion) |>
+            nest() |>
+            mutate(path = map2(.x = data, .y = subregion,
+              .f =  ~ {
+                path <- .x$wt |>
+                  wt_doughnut(start_angle = .x$start_angle,
+                    doughnut_file = paste0(str_replace(sparkline_path, "sparkline", "doughnut"),
+                      "doughnut_",
+                      .y, "_", category,
+                      ".png"))
+                path
+              })) |>
+            dplyr::select(-data) |>
+            unnest(path) |> 
+            deframe()
         }
 
         interp_rgb <- function(c1, c2, frac) {
@@ -1229,7 +1796,7 @@ summary_figures <- function() {
           round(c1 + frac * (c2 - c1))
         }
         
-        arrow_from_value <- function(x, max_angle = 80, scale = 1, catg) {
+        arrow_from_value <- function(x, max_angle = 80, scale = 1, catg, change) {
           angle <- pmax(pmin(x * scale, max_angle), -max_angle)
           angle <- -1 * angle
           angle[is.na(angle)] <- 0
@@ -1244,9 +1811,9 @@ summary_figures <- function() {
           }
           ## print(angle)
           html_col <- vapply(seq_along(angle), function(i) {
-            if (angle[i] > 0) {
+            if (angle[i] > 0 & change[i]) {
               col <- interp_rgb(grey, inc, frac[i])
-            } else if (angle[i] < 0) {
+            } else if (angle[i] < 0 & change[i]) {
               col <- interp_rgb(grey, dec, frac[i])
             } else {
               col <- grey
@@ -1276,20 +1843,67 @@ summary_figures <- function() {
           tbl <- long_term_change |>
             ungroup() |> 
             mutate(Trend = "") |>
-            mutate(Direction = arrow_from_value(median, scale = 1, catg = category)) |> 
-            mutate(median = paste(
-              sprintf("%4.1f%%", start),
-              Direction,
-              sprintf("%4.1f%%", end),
-              "  ",
-              sprintf("<br>(𝚫%6.1f%%)", median))) |> 
+            mutate(change = case_when(
+              Pl >= 0.85 | Pg >= 0.85 ~ TRUE,
+              is.na(Pl) | is.na(Pg) ~ FALSE,
+              .default = FALSE)) |> 
+            mutate(Direction = arrow_from_value(median, scale = 1, catg = category,
+              change = change)) |> 
+            mutate(N = 1:n()) |>
+            mutate(Weight = "")
+          if (sortting_order == "alphabetical") {
+            sort_order <- 1:nrow(tbl)
+          } else if (sortting_order == "change") {
+            tbl <- tbl |> 
+              mutate(median_for_order = case_when(
+                is.na(median) ~ 0,
+                N == max(N) ~ Inf,
+                .default = median)) |> 
+              mutate(change_for_order = case_when(
+                is.infinite(median_for_order) ~ 1,
+                change & median < 0 ~ -1,
+                !change | median == 0 ~ 0,
+                change & median > 0 ~ 1
+              )) |> 
+              arrange(change_for_order, median_for_order) |> 
+              dplyr::select(-median_for_order, -change_for_order) 
+            sort_order <- tbl$N
+          } else if (sorting_order == "weights") {
+            tbl <- tbl |>
+              arrange(desc(wt))
+            sort_order <- tbl$N
+          } else {
+            sort_order <- 1:nrow(tbl)
+          }
+          tbl <- tbl |> 
+            select(-N) |> 
+            mutate(median = case_when(
+              change ~
+                paste(
+                  sprintf("%4.1f%%", start),
+                  Direction,
+                  sprintf("%4.1f%%", end),
+                  "  ",
+                  sprintf("<br>(𝚫%6.1f%%)", median)),
+              .default = paste(
+                sprintf("%4.1f%%", start),
+                Direction,
+                sprintf("%4.1f%%", end))
+              )) |> 
+            dplyr::select(-change) |> 
+            ## mutate(median = paste(
+            ##   sprintf("%4.1f%%", start),
+            ##   Direction,
+            ##   sprintf("%4.1f%%", end),
+            ##   "  ",
+            ##   sprintf("<br>(𝚫%6.1f%%)", median))) |> 
             mutate(Confidence = "") |> 
             ## dplyr::select(Region = region, Trend, Change = median, Confidence) |> 
             ## ## dplyr::select(
             ##   ## !!stringr::str_to_title(level) := dplyr::all_of(level),
             ##   ## str_to_title(level) := dplyr::all_of(level),
             ##   ## Trend, Change = median, Confidence) ##|> 
-            dplyr::select(dplyr::all_of(level), Trend, median, Confidence) |>
+            dplyr::select(dplyr::all_of(level), Trend, median, Weight, Confidence) |>
             dplyr::rename_with(stringr::str_to_title) |>
             dplyr::rename(Change = Median) |> 
             kbl(booktabs = TRUE,
@@ -1302,12 +1916,14 @@ summary_figures <- function() {
                 stringr::str_replace(stringr::str_to_title(level), "_", " "),
                 "Temporal<br>trend",
                 unique(long_term_change$column_label),
-                "Confidence<br>in a change"),
+                "Weight",
+                "Evidence<br>of change"),
               align = c("l", "c", "c", "c"),
               escape = FALSE
             ) |> 
-            column_spec(4, image = spec_image(confidence, width = 100, height = 100)) |> 
-            column_spec(2, image = spec_image(sparkline, width = 300, height = 100)) |> 
+            column_spec(5, image = spec_image(confidence[sort_order], width = 100, height = 100)) |> 
+            column_spec(4, image = spec_image(doughnut[sort_order], width = 150, height = 150)) |> 
+            column_spec(2, image = spec_image(sparkline[sort_order], width = 300, height = 100)) |> 
             kable_paper(full_width = FALSE)
         } else {
           confidence <- gsub(".svg", ".png", confidence)
@@ -1364,11 +1980,14 @@ summary_figures <- function() {
       output_path <- summary_figures_global_parameters_$output_path
       tab_path <- paste0(output_path, "tables/")
       sparkline_path <- paste0(output_path, "tables/sparkline/")
+      doughnut_path <- paste0(output_path, "tables/doughnut/")
       if (!dir.exists(tab_path)) dir.create(tab_path)
       if (!dir.exists(sparkline_path)) dir.create(sparkline_path)
+      if (!dir.exists(doughnut_path)) dir.create(doughnut_path)
       summary_tbl <- summary_tbl_
       summary_subregions <- summary_subregion_V2_
       contrasts_subregions <- contrasts_subregions_
+      wts <- wts_regions_
       library(kableExtra)
       ## ---- summary_tbl_subregions
       ## get the contasts
@@ -1380,9 +1999,11 @@ summary_figures <- function() {
           .f = ~ {
             x <- .x |>
               ungroup() |> 
-              filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              ## filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
               dplyr::select(type, median, Pl, Pg) |>
-              mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)") 
+              ## mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)") 
+              mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)") 
             x |>
               filter(type == "frac") |>
               mutate(start = x |> filter(type == "start") |> pull(median),
@@ -1394,6 +2015,10 @@ summary_figures <- function() {
         unnest(long_term_change) |>
         arrange(region, subregion, category) |> 
         ungroup() |>
+        left_join(wts |>
+                    dplyr::select(region, subregion, wt) |>
+                    mutate(wt = as.vector(wt)),
+          by = c("region", "subregion")) |> 
         group_by(region, category) |>
         nest() 
 
@@ -1405,7 +2030,8 @@ summary_figures <- function() {
         ungroup() |> 
         complete(nesting(region, subregion), category, Year) |>
         dplyr::select(region, subregion, category, Year, median) |>
-        mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        ## mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        mutate(Period_1 = ifelse(Year > 1973 & Year < 1998, TRUE, FALSE)) |> 
         mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
         arrange(region, subregion) |> 
         ungroup() |>
@@ -1435,11 +2061,14 @@ summary_figures <- function() {
       output_path <- summary_figures_global_parameters_$output_path
       tab_path <- paste0(output_path, "tables/")
       sparkline_path <- paste0(output_path, "tables/sparkline/")
+      doughnut_path <- paste0(output_path, "tables/doughnut/")
       if (!dir.exists(tab_path)) dir.create(tab_path)
       if (!dir.exists(sparkline_path)) dir.create(sparkline_path)
+      if (!dir.exists(doughnut_path)) dir.create(doughnut_path)
       summary_tbl <- summary_tbl_
       summary_regions <- summary_region_V2_
       contrasts_regions <- contrasts_regions_
+      wts <- wts_global_
       library(kableExtra)
       ## ---- summary_tbl_regions
       ## get the contasts
@@ -1451,9 +2080,11 @@ summary_figures <- function() {
             x <- .x |>
               ungroup() |> 
               ## filter(contrast == "2000s vs 2020s", type == "frac") |>
-              filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              ## filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
               dplyr::select(type, median, Pl, Pg) |>
-              mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)")
+              ## mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)")
+              mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)")
             x |>
               filter(type == "frac") |>
               mutate(start = x |> filter(type == "start") |> pull(median),
@@ -1466,6 +2097,10 @@ summary_figures <- function() {
         arrange(region, category) |> 
         ungroup() |>
         mutate(global = "global") |> 
+        left_join(wts |>
+                    dplyr::select(region, wt) |>
+                    mutate(wt = as.vector(wt)),
+          by = "region") |> 
         group_by(global, category) |>
         nest() 
 
@@ -1476,7 +2111,8 @@ summary_figures <- function() {
         ungroup() |> 
         complete(region, category, Year) |>
         dplyr::select(region, category, Year, median) |>
-        mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        ## mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        mutate(Period_1 = ifelse(Year > 1973 & Year < 1998, TRUE, FALSE)) |> 
         mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
         arrange(region) |> 
         ungroup() |>
@@ -1507,8 +2143,10 @@ summary_figures <- function() {
       output_path <- summary_figures_global_parameters_$output_path
       tab_path <- paste0(output_path, "tables/")
       sparkline_path <- paste0(output_path, "tables/sparkline/")
+      doughnut_path <- paste0(output_path, "tables/doughnut/")
       if (!dir.exists(tab_path)) dir.create(tab_path)
       if (!dir.exists(sparkline_path)) dir.create(sparkline_path)
+      if (!dir.exists(doughnut_path)) dir.create(doughnut_path)
       summary_tbl <- summary_tbl_
       summary_globals <- summary_global_V2_
       contrasts_globals <- contrasts_global_
@@ -1522,9 +2160,11 @@ summary_figures <- function() {
             x <- .x |>
               ungroup() |> 
               ## filter(contrast == "2000s vs 2020s", type == "frac") |>
-              filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              ## filter(contrast == "Ref vs 2020s", type %in% c("frac", "start", "end")) |>
+              filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
               dplyr::select(type, median, Pl, Pg) |>
-              mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)")
+              ## mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)")
+              mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)")
             x |>
               filter(type == "frac") |>
               mutate(start = x |> filter(type == "start") |> pull(median),
@@ -1548,7 +2188,8 @@ summary_figures <- function() {
         ungroup() |> 
         complete(category, Year) |>
         dplyr::select(category, Year, median) |>
-        mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        ## mutate(Period_1 = ifelse(Year > 1973 & Year < 2010, TRUE, FALSE)) |> 
+        mutate(Period_1 = ifelse(Year > 1973 & Year < 1998, TRUE, FALSE)) |> 
         mutate(Period_2 = ifelse(Year > 2019 & Year < 2030, TRUE, FALSE)) |>
         ## arrange(region) |> 
         ungroup() |>

@@ -582,6 +582,7 @@ aggregate_models <- function() {
         "2010s vs 2020s", 2010:2019, 2020:2024,
         "2000s vs 2020s", 2000:2009, 2020:2024,
         "Ref vs 2020s", 1973:2009, 2020:2024,
+        "Ref2 vs 2020s", 1973:1997, 2020:2024,
         )
       ## ----end
       contr
@@ -732,11 +733,21 @@ aggregate_models <- function() {
                 cm_2[cm_2<0] <- 0
                 res_1 <- as.numeric(.x %*% cm_1)
                 res_2 <- as.numeric(.x %*% cm_2)
-                if (sum(cm_1) == 0) {
-                  res_abs <- res_frac <- res_1 <- rep(NA, length(res_frac))
+                for (j in 1:ncol(cm_1)) {
+                 if (sum(cm_1[,j]) == 0) {
+                  res_abs[j] <- res_frac[j] <- res_1[j] <- rep(NA, length(res_frac[j]))
+                 }
                 }
-                if (sum(cm_2) == 0) {
-                  res_abs <- res_frac <- res_2 <- rep(NA, length(res_frac))
+                ## if (sum(cm_1) == 0) {
+                ##   res_abs <- res_frac <- res_1 <- rep(NA, length(res_frac))
+                ## }
+                ## if (sum(cm_2) == 0) {
+                ##   res_abs <- res_frac <- res_2 <- rep(NA, length(res_frac))
+                ## }
+                for (j in 1:ncol(cm_2)) {
+                 if (sum(cm_2[,j]) == 0) {
+                  res_abs[j] <- res_frac[j] <- res_2[j] <- rep(NA, length(res_frac[j]))
+                 }
                 }
                 ## data.frame(contrast = rep(colnames(cm), 2),
                 ##   type = rep(c("abs", "frac"), each = length(colnames(cm))),
@@ -835,6 +846,22 @@ aggregate_models <- function() {
                 ##   type = rep(c("abs", "frac"), each = length(colnames(cm))),
                 ##   value = c(res_abs, res_frac)
                 ## )
+                ## if (sum(cm_1) == 0) {
+                ##   res_abs <- res_frac <- res_1 <- rep(NA, length(res_frac))
+                ## }
+                ## if (sum(cm_2) == 0) {
+                ##   res_abs <- res_frac <- res_2 <- rep(NA, length(res_frac))
+                ## }
+                for (j in 1:ncol(cm_1)) {
+                 if (sum(cm_1[,j]) == 0) {
+                  res_abs[j] <- res_frac[j] <- res_1[j] <- rep(NA, length(res_frac[j]))
+                 }
+                }
+                for (j in 1:ncol(cm_2)) {
+                 if (sum(cm_2[,j]) == 0) {
+                  res_abs[j] <- res_frac[j] <- res_2[j] <- rep(NA, length(res_frac[j]))
+                 }
+                }
                 data.frame(contrast = rep(colnames(cm), 4),
                   type = rep(c("abs", "frac", "start", "end"), each = length(colnames(cm))),
                   value = c(res_abs, res_frac, res_1, res_2)

@@ -612,7 +612,9 @@ helper_functions <- function() {
 
         
         ## make the plot
-
+        minor_breaks <- function(lims) {
+          seq(floor(lims[1]), ceiling(lims[2]), by = 1)
+        }
         g1 <-
           cellmeans |>
           ggplot(aes(y = median, x = Year)) +
@@ -632,7 +634,11 @@ helper_functions <- function() {
           geom_line(colour = "orange", linewidth = 2) +
           geom_line(colour = "white", linewidth = 1.5) +
           scale_y_continuous(paste(ytitle, "cover (%)"),
-                             labels =  function(x) x * 100) +
+            labels =  function(x) x * 100
+          ) +
+          scale_x_continuous(
+            minor_breaks = minor_breaks,
+            guide = guide_axis(minor.ticks = TRUE)) +
           theme_classic() 
         if (nrow(gap_yrs) > 0) {
           g1 <- g1 +
