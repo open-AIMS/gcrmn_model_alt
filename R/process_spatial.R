@@ -76,6 +76,7 @@ process_spatial <- function() {
         "ETP", "ETP 4", "Eastern Galapagos Islands",
         "South Asia", "South Asia 4", "Eastern India",
         "Brazil", "Brazil 4", "Guianan",
+        "Brazil", "Brazil 4", "Trindade and Martin Vaz Islands",
         "East Asia", "East Asia 2", "Halmahera",
         "ETP", "ETP 1", "Magdalena Transition",
         "Pacific", "Pacific 7", "Marquesas",

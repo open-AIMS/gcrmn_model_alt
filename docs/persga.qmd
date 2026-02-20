@@ -595,7 +595,7 @@ for (catg in cats) {
     cat(paste0("Subregion reef area and weights applied in the aggregation up to Region.\n"))
     cat(":::\n")
     cat(":::\n")
-   
+     
     cat("::: {.callout-note collapse=true}\n")
     cat("#### Show data behind figure\n")
     cat("::: {#tbl-data}\n")
@@ -643,23 +643,91 @@ for (catg in cats) {
       str_replace_all("lightable-paper", "table") |>
       cat()
 
-    cat(paste0("Change in ", catg, " cover (%) for each Subregion (and Regional aggregate at the bottom) depicted 
-       as a simplified temporal trend as well as the direction of change (arrow) 
-       between a reference period (< 2010, red line on trends) and the 2020s 
-       (blue line on trends). Values immediately to the left and right of the 
-       arrows represent the average cover for the reference and 2020s respectively.
-       Values in brackets represent the percentage change in percentage cover 
-       between the reference and 2020s. Confidence in whether there was a change
-       in cover between the reference and 2020s is expressed as a signal strength
-       based on Bayesian exceedence probabilities (no bars: Pr(Δ>0) < 0.85 (no evidence),
-       one bar: Pr(Δ>0) < 0.90 (weak evidence), two bars: Pr(Δ>0) < 0.95 (evidence), 
-       three bars: Pr(Δ>0) < 1.00 (strong evidence), four bars Pr(Δ>0) = 1.00).
-       \n")) 
-    cat(":::\n\n")
+    cat(paste0("Change in ", catg, " cover (%) for each Subregion (and
+       Regional aggregate at the bottom) depicted as a simplified
+       temporal trend as well as the direction of change (arrow)
+       between a reference period (< 2010, red line on trends) and the
+       2020s (blue line on trends). Values immediately to the left and
+       right of the arrows represent the average cover for the
+       reference and 2020s respectively.  Values in brackets represent
+       the percentage change in percentage cover between the reference
+       and 2020s. Weights used to aggregate from Subregion to Region
+       are represented by doughnut plots with actual weights displayed
+       above doughnuts. Confidence in whether there was a change in
+       cover between the reference and 2020s is expressed as a signal
+       strength based on Bayesian exceedence probabilities (no bars:
+       Pr(Δ>0) < 0.85 (no evidence), one bar: Pr(Δ>0) < 0.90 (weak
+       evidence), two bars: Pr(Δ>0) < 0.95 (evidence), three bars:
+       Pr(Δ>0) < 1.00 (strong evidence), four bars Pr(Δ>0) = 1.00).
+       \n"))
+     cat(":::\n\n")
     
 }
 ```
 
+```{r}
+#| label: aggregate ecoregion plots MA_Turf
+#| eval: true
+#| echo: false
+#| output: asis
+#| warning: false
+#| message: false
+#| cache: false
+reg <- "PERSGA"
+dat_reg <- benthic_posteriors_ecoregions |>
+ dplyr::filter(region == reg)
+## use Macroalgae as the proxy category
+catg <- "Macroalgae"
+new_catg <- "Macroalgae and Turf algae"
+cat(paste0("## ", new_catg, "\n"))
+cat("This section is simply to represent Macroalgae and 
+Turf algae in the same figure. Please refer to the individual 
+(above) sections on Macroalgae and Turf algae
+for more detailed information.
+\n\n")
+  
+dat_cat <- dat_reg |>
+  dplyr::filter(category == catg)
+## Subregion level =====================================================================
+cat(paste0("### Subregion level\n"))
+cat("::: {.panel-tabset}\n")
+for (subreg in sort(unique(dat_cat$subregion))) {
+    dat_subreg <- summary_subregion |>
+      dplyr::filter(category == catg, subregion == subreg)
+    subreg_name <- dat_subreg |> pull(subregion_name) |> unique()
+    cat(paste0("#### ", subreg_name, "\n"))
+    fig <- dat_subreg$plot[[1]]
+    fig4a_V2 <- str_replace(fig, "pdp", "pdp_bayes_a_V2")
+    fig4a_V2 <- str_replace(fig4a_V2, "Macroalgae", "Macroalgae and Turf algae")
 
+    cat("::: {.figure #fig-x}\n")
+    cat(paste0("![](", fig4a_V2,"){width=400px}\n\n"))
+    cat(paste0("Modelled temporal trend in Macrolgae (green
+    ribbon with white line) and Turf algae (blue ribbon with white line) 
+    for the ", subreg, " GCRMN subregion.  The green and blue bands represent
+    80% and 95% (darker) credibility intervals.  Grey ribbon represents 
+    years for which there are no observed data.\n"))
+    cat(":::\n\n")
+}
 
+cat(":::\n\n")
+
+## Region level =====================================================================
+cat(paste0("### Region level\n"))
+data_reg <- benthic_posteriors_regions |>
+  dplyr::filter(category == catg, region == reg)
+
+fig <- data_reg$plot[[1]]
+fig2a <- str_replace(fig, "pdp", "pdp_bayes_a_V2")
+fig2a <- str_replace(fig2a, "Macroalgae", "Macroalgae and Turf algae")
+
+cat("::: {.figure #fig-x}\n")
+cat(paste0("![](", fig2a,"){width=400px}\n\n"))
+cat(paste0("Modelled temporal trend in Macroalgae (green
+  ribbon with white line) and Turf algae (blue ribbon with white line)  
+  for the PERSGA GCRMN region.  The green and blue bands represent
+  80% and 95% (darker) credibility intervals.  Grey ribbon represents 
+  years for which there are no observed data.\n"))
+cat(":::\n\n")
+```
 

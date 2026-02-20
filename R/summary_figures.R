@@ -822,488 +822,60 @@ summary_figures <- function() {
       benthic_posteriors_subregions_V2
     }
     ),
-    ## tar_target(pdp_plots_algaes_, {
-    ##   interpolate_values <- interpolate_values_
-    ##   output_path <- summary_figures_global_parameters_$output_path
-    ##   stan_partial_plot <- stan_partial_plot_
-    ##   ## ---- stan partial plot function
-    ##   pdp_plots_algaes <- function(cellmeans, dat, stan_data, name,
-    ##                         simple_means =  NA,
-    ##                         xgboost_models = NULL, stan_models = NULL,
-    ##                         type = "cellmeans_years", .scale = "ecoregion",
-    ##                         final_year = 2024) {
-    ##     ## xgboost_models <- more_args[1]
-    ##     ## stan_models <- more_args[2]
-    ##     ## type <- more_args[3]
-    ##     ## .scale <- more_args[4]
-    ##     title <- str_replace_all(name, "_", " ")
-    ##     ytitle <- str_replace(name, ".*_(.*)", "\\1")
-    ##     figure_path <- paste0(output_path, "figures/", .scale, "/")
-    ##     ## Start with Macroalgae
-    ##     stan_data_ma <- stan_data |> filter(category == "Macroalgae") |>
-    ##       _[["stan_data"]]
-    ##     first_year_ma <- stan_data_ma$all_years[stan_data_ma$data_years[1]]
-    ##     stan_data_ta <- stan_data |> filter(category == "Turf algae") |>
-    ##       _[["stan_data"]]
-    ##     first_year_ta <- stan_data_ta$all_years[stan_data_ta$data_years[1]]
+    tar_target(aggregate_subregion_plots_algaes_V2_, {
+      benthic_posteriors <- aggregate_compile_V2_
+      benthic_posteriors_subregions_V2 <- aggregate_subregions_V2_
+      data_path <- summary_figures_global_parameters_$data_path
+      output_path <- summary_figures_global_parameters_$output_path
+      wts <- process_spatial_weights_
+      all_years <- get_all_years_
+      interpolate_values <- interpolate_values_
+      stan_partial_plot_algaes <- stan_partial_plot_algaes_
+      pdp_plots_algaes <- pdp_plots_algaes_
+      
+      ## ---- aggregate_subregion_plots_algaes
+      stan_data  <-
+        benthic_posteriors |>
+        filter(!category %in% c("Hard coral", "Algae")) |> 
+        ungroup(ecoregion) |>
+        ## group_by(region, subregion, category) |>
+        dplyr::select(region, subregion, category, stan_data) |>
+        ## filter(subregion %in% c("Caribbean 1", "Caribbean 2")) |>
+        summarise(stan_data = list(
+          reduce(
+            map(.x = stan_data,
+              ~ .x[names(.x) %in% c("data_years", "all_years")]),
+            ~ map2(.x, .y, ~ sort(unique(c(.x, .y))))))) |>
+        unnest(stan_data) |>
+        nest(.key = "stan_data")
+      stan_models <- benthic_posteriors_subregions_V2 |> pull(subregion) |> unique() |> sort()
 
-        
-    ##     if (type == "cellmeans_years") {
-    ##       ## (g0) Bayes only, full year range, no data, no simple means
-    ##       nm0 <- paste0(figure_path, .scale, "_pdp_bayes_V2_", "_", name, ".png")
-    ##       ## (g0a) Bayes, trimmed year range, no data, no simple means
-    ##       nm0a <- paste0(figure_path, .scale, "_pdp_bayes_a_V2_", "_", name, ".png")
-    ##     } else {
-    ##       ## (g0) Bayes only, full year range, no data, no simple means
-    ##       nm0 <- paste0(figure_path, .scale, "_pdp_bayes_", "_", name, ".png")
-    ##       ## (g0a) Bayes, trimmed year range, no data, no simple means
-    ##       nm0a <- paste0(figure_path, .scale, "_pdp_bayes_a_", "_", name, ".png")
-    ##     }
-    ##     cellmeans_ma <- cellmeans |> filter(category == "Macroalgae") 
-    ##     cellmeans_ta <- cellmeans |> filter(category == "Turf algae") 
-    ##     ## plot without raw points
-    ##     g1 <- stan_partial_plot(cellmeans_ma, stan_data_ma,
-    ##       data = NULL,
-    ##       title = title,
-    ##       ytitle = ytitle,
-    ##       include_raw = FALSE)
-    ##     g1_A <- stan_partial_plot(cellmeans_ta, stan_data_ta,
-    ##       data = NULL,
-    ##       title = title,
-    ##       ytitle = ytitle,
-    ##       include_raw = FALSE)
-    ##     g1 <- g1 +
-    ##       theme(panel.grid.major.y = element_line(),
-    ##         panel.grid.minor.y = element_line(),
-    ##         panel.grid.major.x = element_line()
-    ##       )
-
-        
-    ##     ## Bayes only, full year range, no data, no simple means
-    ##     ggsave(
-    ##       filename = nm0,
-    ##       g1,
-    ##       width =  6, height =  4, dpi =  72
-    ##     ) |> suppressWarnings() |> suppressMessages()
-    ##     ggsave(
-    ##       filename = str_replace(nm0, "png", "_hr.png"),
-    ##       g1,
-    ##       width =  6, height =  4, dpi =  500
-    ##     ) |> suppressWarnings() |> suppressMessages()
-
-    ##     g0 <- g1
-        
-    ##     if (!any(str_detect(name, setdiff(xgboost_models, stan_models))) &
-    ##           !is.null(xgboost)) {
-    ##       g1 <- g1 +
-    ##         geom_ribbon(data = xgboost, inherit.aes = FALSE,
-    ##           aes(y = mean, x = year,
-    ##             ymin = lower_ci_95, ymax = upper_ci_95),
-    ##           color = NA, fill = "blue", alpha = 0.5) +
-    ##         geom_line(data = xgboost, inherit.aes = FALSE,
-    ##           aes(y = mean, x = year), colour = "blue")
-    ##     }
-    ##     ## Bayes + xgboost (where available), full year range, no data, no simple means
-    ##     ggsave(
-    ##       filename = nm,
-    ##       g1,
-    ##       width =  6, height =  4, dpi =  72
-    ##     ) |> suppressWarnings() |> suppressMessages()
-
-    ##     ## Now a version trimmed to minium data year
-    ##     g1a <- stan_partial_plot(
-    ##       cellmeans,
-    ##       stan_data,
-    ##       data = NULL,
-    ##       title = title,
-    ##       ytitle = ytitle,
-    ##       include_raw = FALSE,
-    ##       ## min_year = min(dat$Year))
-    ##       min_year = first_year,
-    ##       max_year = final_year)
-
-    ##     ## Bayes, trimmed year range, no data, no simple means
-    ##     ggsave(
-    ##       filename = nm0a,
-    ##       g1a,
-    ##       width =  6, height =  4, dpi =  72
-    ##     ) |> suppressWarnings() |> suppressMessages()
-    ##     ggsave(
-    ##       filename = str_replace(nm0a, "png", "_hr.png"),
-    ##       g1a,
-    ##       width =  6, height =  4, dpi =  500
-    ##     ) |> suppressWarnings() |> suppressMessages()
-
-    ##     g0a <- g1a
-        
-    ##     if (!any(str_detect(name, setdiff(xgboost_models, stan_models))) &
-    ##           !is.null(xgboost)) {
-    ##       ## Now a version trimmed to minium data year
-    ##       g1a <- g1a +
-    ##         geom_ribbon(data = xgboost |> filter(year >= first_year) |> droplevels(),
-    ##           inherit.aes = FALSE,
-    ##           aes(y = mean, x = year,
-    ##             ymin = lower_ci_95, ymax = upper_ci_95),
-    ##           color = NA, fill = "blue", alpha = 0.5) +
-    ##         geom_line(data = xgboost |> filter(year >= first_year) |> droplevels(),
-    ##           inherit.aes = FALSE,
-    ##           aes(y = mean, x = year), colour = "blue")
-    ##     }
-    ##     ## Bayes + xgboost (where available), trimmed year range, no data, no simple means
-    ##     ggsave(
-    ##       filename = nma,
-    ##       g1a,
-    ##       width =  6, height =  4, dpi =  72
-    ##     ) |> suppressWarnings() |> suppressMessages()
-
-    ##     if (.scale == "ecoregion") {
-    ##       g2 <- stan_partial_plot(cellmeans, stan_data,
-    ##         data = dat,
-    ##         title = title,
-    ##         ytitle = ytitle,
-    ##         include_raw = TRUE)
-    ##       ## Bayes, full year range, with data, no simple means
-    ##       ggsave(
-    ##         filename = nm2,
-    ##         g2,
-    ##         width =  6, height =  4, dpi =  72
-    ##       ) |> suppressWarnings() |> suppressMessages()
-          
-    ##       g2a <- stan_partial_plot(
-    ##         cellmeans,
-    ##         stan_data,
-    ##         data = dat,
-    ##         title = title,
-    ##         ytitle = ytitle,
-    ##         include_raw = TRUE,
-    ##         min_year = min(dat$Year),
-    ##         max_year = final_year)
-    ##       ## Bayes, trimmed year range, with data, no simple means
-    ##       ggsave(
-    ##         filename = nm2a,
-    ##         g2a,
-    ##         width =  6, height =  4, dpi =  72
-    ##       ) |> suppressWarnings() |> suppressMessages()
-
-    ##       if (!any(str_detect(name, setdiff(xgboost_models, stan_models))) &
-    ##             !is.null(xgboost)){
-    ##         g3 <- g2 +
-    ##           geom_ribbon(data = xgboost, inherit.aes = FALSE,
-    ##             aes(y = mean, x = year,
-    ##               ymin = lower_ci_95, ymax = upper_ci_95),
-    ##             color = NA, fill = "blue", alpha = 0.5) +
-    ##           geom_line(data = xgboost, inherit.aes = FALSE,
-    ##             aes(y = mean, x = year), colour = "blue")
-    ##         ## Bayes + xgboost, full year range, with data, no simple means
-    ##         ggsave(
-    ##           filename = nm3,
-    ##           g3,
-    ##           width =  6, height =  4, dpi =  72
-    ##         ) |> suppressWarnings() |> suppressMessages()
-          
-    ##         g3a <- g2a +
-    ##           geom_ribbon(data = xgboost |> filter(year >= min(dat$Year)) |> droplevels(),
-    ##             inherit.aes = FALSE,
-    ##             aes(y = mean, x = year,
-    ##               ymin = lower_ci_95, ymax = upper_ci_95),
-    ##             color = NA, fill = "blue", alpha = 0.5) +
-    ##           geom_line(data = xgboost |> filter(year >= min(dat$Year)) |> droplevels(),
-    ##             inherit.aes = FALSE,
-    ##             aes(y = mean, x = year), colour = "blue")
-    ##         ## Bayes + xgboost, full year range, with data, no simple means
-    ##         ggsave(
-    ##           filename = nm3a,
-    ##           g3a,
-    ##           width =  6, height =  4, dpi =  72
-    ##         ) |> suppressWarnings() |> suppressMessages()
-    ##       }
-          
-    ##       if (!any(is.na(simple_means))) {
-    ##         ## Add the simple means
-    ##         simple_means <- simple_means |>
-    ##           mutate(across(c(mean, median, smean, smedian), \(x) x/100)) |>
-    ##           filter(as.numeric(as.character(cYear)) <= final_year) |>
-    ##           droplevels()
-    ##         g1 <- g1 +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##               color = "simple mean")) +
-    ##           geom_point(data = simple_means,
-    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##               color = "simple mean")) +
-
-    ##           geom_line(data = simple_means,
-    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. mean")) +
-    ##           geom_point(data = simple_means,
-    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. mean")) +
-
-    ##           geom_point(data = simple_means,
-    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##               color = "simple median")) +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##               color = "simple median")) +
-
-    ##           geom_point(data = simple_means,
-    ##             aes(y = median, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. median")) +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = median, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. median")) 
-
-    ##         ## Bayes + xgboost, full year range, no data, simple means
-    ##         ggsave(
-    ##           filename = nm5,
-    ##           g1,
-    ##           width =  6, height =  4, dpi =  72
-    ##         ) |> suppressWarnings() |> suppressMessages()
-    ##         g0a <- g0a +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##               color = "simple mean")) +
-    ##           geom_point(data = simple_means,
-    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##               color = "simple mean")) +
-
-    ##           geom_line(data = simple_means,
-    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. mean")) +
-    ##           geom_point(data = simple_means,
-    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. mean")) +
-
-    ##           geom_point(data = simple_means,
-    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##               color = "simple median")) +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##               color = "simple median")) +
-
-    ##           geom_point(data = simple_means,
-    ##             aes(y = median, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. median")) +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = median, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. median")) 
-    ##         ## Bayes, full year range, no data, simple means
-    ##         ggsave(
-    ##           filename = nm6a,
-    ##           g0a,
-    ##           width =  6, height =  4, dpi =  72
-    ##         ) |> suppressWarnings() |> suppressMessages()
-
-    ##         g1a <- g1a +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##               color = "simple mean")) +
-    ##           geom_point(data = simple_means,
-    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##               color = "simple mean")) +
-
-    ##           geom_line(data = simple_means,
-    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. mean")) +
-    ##           geom_point(data = simple_means,
-    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. mean")) +
-
-    ##           geom_point(data = simple_means,
-    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##               color = "simple median")) +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##               color = "simple median")) +
-
-    ##           geom_point(data = simple_means,
-    ##             aes(y = median, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. median")) +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = median, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. median")) 
-    ##         ## Bayes, trimmed year range, no data, simple means
-    ##         ggsave(
-    ##           filename = nm5a,
-    ##           g1a,
-    ##           width =  6, height =  4, dpi =  72
-    ##         ) |> suppressWarnings() |> suppressMessages()
-              
-    ##         g7a <- g2a +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##               color = "simple mean")) +
-    ##           geom_point(data = simple_means,
-    ##             aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##               color = "simple mean")) +
-
-    ##           geom_line(data = simple_means,
-    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. mean")) +
-    ##           geom_point(data = simple_means,
-    ##             aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. mean")) +
-
-    ##           geom_point(data = simple_means,
-    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##               color = "simple median")) +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##               color = "simple median")) +
-
-    ##           geom_point(data = simple_means,
-    ##             aes(y = median, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. median")) +
-    ##           geom_line(data = simple_means,
-    ##             aes(y = median, x = as.numeric(as.character(cYear)),
-    ##               color = "hier. median")) 
-    ##         ## Bayes, trimmed year range, with data, simple means
-    ##         ggsave(
-    ##           filename = nm7a,
-    ##           g7a,
-    ##           width =  6, height =  4, dpi =  72
-    ##         ) |> suppressWarnings() |> suppressMessages()
-
-    ##         if (!any(str_detect(name, setdiff(xgboost_models, stan_models))) &
-    ##               !is.null(xgboost)){
-    ##           g4 <- g3 +
-    ##             geom_line(data = simple_means,
-    ##               aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##                 color = "simple mean")) +
-    ##             geom_point(data = simple_means,
-    ##               aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##                 color = "simple mean")) +
-    ##             geom_line(data = simple_means,
-    ##               aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##                 color = "hier. mean")) +
-    ##             geom_point(data = simple_means,
-    ##               aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##                 color = "hier. mean")) +
-    ##             geom_point(data = simple_means,
-    ##               aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##                 color = "simple median")) +
-    ##             geom_line(data = simple_means,
-    ##               aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##                 color = "simple median")) +
-    ##             geom_point(data = simple_means,
-    ##               aes(y = median, x = as.numeric(as.character(cYear)),
-    ##                 color = "hier. median")) +
-    ##             geom_line(data = simple_means,
-    ##               aes(y = median, x = as.numeric(as.character(cYear)),
-    ##                 color = "hier. median")) 
-    ##           ## Bayes + xgboost, full year range, with data, simple means
-    ##           ggsave(
-    ##             filename = nm4,
-    ##             g4,
-    ##             width =  6, height =  4, dpi =  72
-    ##           ) |> suppressWarnings() |> suppressMessages()
-
-    ##           g4a <- g3a +
-    ##             geom_line(data = simple_means,
-    ##               aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##                 color = "simple mean")) +
-    ##             geom_point(data = simple_means,
-    ##               aes(y = smean, x = as.numeric(as.character(cYear)),
-    ##                 color = "simple mean")) +
-    ##             geom_line(data = simple_means,
-    ##               aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##                 color = "hier. mean")) +
-    ##             geom_point(data = simple_means,
-    ##               aes(y = mean, x = as.numeric(as.character(cYear)),
-    ##                 color = "hier. mean")) +
-    ##             geom_point(data = simple_means,
-    ##               aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##                 color = "simple median")) +
-    ##             geom_line(data = simple_means,
-    ##               aes(y = smedian, x = as.numeric(as.character(cYear)),
-    ##                 color = "simple median")) +
-    ##             geom_point(data = simple_means,
-    ##               aes(y = median, x = as.numeric(as.character(cYear)),
-    ##                 color = "hier. median")) +
-    ##             geom_line(data = simple_means,
-    ##               aes(y = median, x = as.numeric(as.character(cYear)),
-    ##                 color = "hier. median")) 
-    ##           ## Bayes + xgboost, trimmed year range, with data, simple means
-    ##           ggsave(
-    ##             filename = nm4a,
-    ##             g4a,
-    ##             width =  6, height =  4, dpi =  72
-    ##           ) |> suppressWarnings() |> suppressMessages()
-    ##         }
-    ##       }
-          
-    ##     }
-
-    ##     nm
-    ##   }
-    ##   ## ----end
-    ##   pdp_plots_algaes
-    ## }),
-    ## tar_target(aggregate_subregion_plots_V2_2_, {
-    ##   benthic_posteriors <- aggregate_compile_V2_
-    ##   benthic_posteriors_subregions_V2 <- aggregate_subregions_V2_
-    ##   data_path <- summary_figures_global_parameters_$data_path
-    ##   output_path <- summary_figures_global_parameters_$output_path
-    ##   wts <- process_spatial_weights_
-    ##   all_years <- get_all_years_
-    ##   interpolate_values <- interpolate_values_
-    ##   stan_partial_plot <- stan_partial_plot_
-    ##   ## benthic_models <- fit_models_stan_predict_
-    ##   data_xgboost <- xgboost_data_
-    ##   pdp_plots <- pdp_plots_
-    ##   ## ---- aggregate_subregion_plots 2
-    ##   ## data_xgboost <- data_xgboost |>
-    ##   ##   filter(!is.na(subregion), is.na(ecoregion)) |>
-    ##   ##   droplevels() |>
-    ##   ##   mutate(across(c(mean, lower_ci_95, upper_ci_95), function(x) x/100)) |>
-    ##   ##   group_by(region, subregion, ecoregion, category) |>
-    ##   ##   nest(.key = "xgboost")
-    ##   ## combine the stan_data
-    ##   stan_data  <-
-    ##     benthic_posteriors |>
-    ##     filter(!category %in% c("Hard coral", "Algae")) |> 
-    ##     ungroup(ecoregion) |>
-    ##     ## group_by(region, subregion, category) |>
-    ##     dplyr::select(region, subregion, category, stan_data) |>
-    ##     ## filter(subregion %in% c("Caribbean 1", "Caribbean 2")) |>
-    ##     summarise(stan_data = list(
-    ##                 reduce(
-    ##                   map(.x = stan_data,
-    ##                       ~ .x[names(.x) %in% c("data_years", "all_years")]),
-    ##                   ~ map2(.x, .y, ~ sort(unique(c(.x, .y))))))) |>
-    ##     unnest(stan_data) |>
-    ##     nest(.key = "stan_data")
-    ##   ## xgboost_models <- data_xgboost |> pull(subregion) |> unique() |> sort()
-    ##   ## stan_models <- benthic_posteriors_subregions_V2 |> pull(subregion) |> unique() |> sort()
-        
-    ##   benthic_posteriors_subregions_V2_2 <-
-    ##     benthic_posteriors_subregions_V2 |>
-    ##     filter(!category %in% c("Hard coral", "Algae")) |> 
-    ##     dplyr::select(-posteriors) |>
-    ##     unnest(cellmeans) |>
-    ##     ungroup(category) |>
-    ##     nest(.key = "cellmeans") |> 
-    ##     left_join(stan_data, by = c("region", "subregion")) |>
-    ##     ## left_join(data_xgboost,
-    ##     ##           by = c("region", "subregion", "category")) |>
-    ##     mutate(name = paste(subregion, "algaes", sep = "_")) |>
-    ##     mutate(plot = list(
-    ##       parallel::mcmapply(FUN = pdp_plots_algaes,
-    ##         cellmeans, dat = data.frame(a = 1), stan_data, name, xgboost,
-    ##         simple_means = NA,
-    ##         MoreArgs = list(
-    ##           stan_models = stan_models,
-    ##           type = "cellmeans_years", .scale = "subregion"),
-    ##         mc.cores = 40,
-    ##         SIMPLIFY = FALSE, USE.NAMES = FALSE)
-    ##     )) |>
-    ##     mutate(plot = plot[[1]]) |>
-    ##     group_by(region, subregion, category) 
-
-    ##   # ----end
-    ##   benthic_posteriors_subregions_V2
-    ## }
-    ## ),
+      benthic_posteriors_subregions_algaes_V2 <-
+        benthic_posteriors_subregions_V2 |>
+        filter(!category %in% c("Hard coral", "Algae")) |> 
+        dplyr::select(-posteriors) |>
+        unnest(cellmeans) |>
+        ungroup(category) |>
+        nest(.key = "cellmeans") |> 
+        left_join(stan_data, by = c("region", "subregion")) |>
+        ## left_join(data_xgboost,
+        ##           by = c("region", "subregion", "category")) |>
+        mutate(name = paste(subregion, "Macroalgae and Turf algae", sep = "_")) |>
+        mutate(plot = list(
+          parallel::mcmapply(FUN = pdp_plots_algaes,
+            cellmeans, dat = data.frame(a = 1), stan_data, name,
+            simple_means = NA,
+            MoreArgs = list(
+              stan_models = stan_models,
+              type = "cellmeans_years", .scale = "subregion"),
+            mc.cores = 40,
+            SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |>
+        mutate(plot = plot[[1]]) |>
+        group_by(region, subregion) 
+      ## ----end
+      benthic_posteriors_subregions_algaes_V2
+    }),
     tar_target(summary_subregion_, {
       benthic_posteriors_subregion <- aggregate_subregion_plots_
       summarise_info <- summarise_info_
@@ -1438,6 +1010,59 @@ summary_figures <- function() {
       benthic_posteriors_regions_V2
     }
     ),
+    tar_target(aggregate_region_plots_algaes_V2_, {
+      benthic_posteriors <- aggregate_compile_V2_
+      benthic_posteriors_regions_V2 <- aggregate_regions_V2_
+      data_path <- summary_figures_global_parameters_$data_path
+      output_path <- summary_figures_global_parameters_$output_path
+      wts <- process_spatial_weights_
+      all_years <- get_all_years_
+      interpolate_values <- interpolate_values_
+      stan_partial_plot_algaes <- stan_partial_plot_algaes_
+      pdp_plots_algaes <- pdp_plots_algaes_
+      
+      ## ---- aggregate_region_plots_algaes
+      stan_data  <-
+        benthic_posteriors |>
+        filter(!category %in% c("Hard coral", "Algae")) |> 
+        ungroup(ecoregion, subregion) |>
+        dplyr::select(region, category, stan_data) |>
+        summarise(stan_data = list(
+          reduce(
+            map(.x = stan_data,
+              ~ .x[names(.x) %in% c("data_years", "all_years")]),
+            ~ map2(.x, .y, ~ sort(unique(c(.x, .y))))))) |>
+        unnest(stan_data) |>
+        nest(.key = "stan_data")
+      stan_models <- benthic_posteriors_regions_V2 |> pull(region) |> unique() |> sort()
+
+      benthic_posteriors_regions_algaes_V2 <-
+        benthic_posteriors_regions_V2 |>
+        filter(!category %in% c("Hard coral", "Algae")) |> 
+        dplyr::select(-posteriors) |>
+        unnest(cellmeans) |>
+        ungroup(category) |>
+        nest(.key = "cellmeans") |> 
+        left_join(stan_data, by = c("region")) |>
+        ## left_join(data_xgboost,
+        ##           by = c("region", "subregion", "category")) |>
+        mutate(name = paste(region, "Macroalgae and Turf algae", sep = "_")) |>
+        mutate(plot = list(
+          parallel::mcmapply(FUN = pdp_plots_algaes,
+            cellmeans, dat = data.frame(a = 1), stan_data, name,
+            simple_means = NA,
+            MoreArgs = list(
+              stan_models = stan_models,
+              type = "cellmeans_years", .scale = "region"),
+            mc.cores = 40,
+            SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |>
+        mutate(plot = plot[[1]]) |>
+        group_by(region) 
+      ## ----end
+      benthic_posteriors_regions_algaes_V2
+      
+    }),
     tar_target(summary_region_, {
       benthic_posteriors_region <- aggregate_region_plots_
       summarise_info <- summarise_info_
@@ -1570,6 +1195,68 @@ summary_figures <- function() {
       benthic_posteriors_global_V2
     }
     ),
+    tar_target(aggregate_global_plots_algaes_V2_, {
+      benthic_posteriors <- aggregate_compile_V2_
+      benthic_posteriors_global_V2 <- aggregate_global_V2_
+      data_path <- summary_figures_global_parameters_$data_path
+      output_path <- summary_figures_global_parameters_$output_path
+      wts <- process_spatial_weights_
+      all_years <- get_all_years_
+      interpolate_values <- interpolate_values_
+      stan_partial_plot_algaes <- stan_partial_plot_algaes_
+      pdp_plots_algaes <- pdp_plots_algaes_
+      ## ---- aggregate_global_plots_algaes
+      stan_data  <-
+        benthic_posteriors |>
+        filter(!category %in% c("Hard coral", "Algae")) |> 
+        ungroup(ecoregion, subregion, region) |>
+        dplyr::select(category, stan_data) |>
+        summarise(stan_data = list(
+          reduce(
+            map(.x = stan_data,
+              ~ .x[names(.x) %in% c("data_years", "all_years")]),
+            ~ map2(.x, .y, ~ sort(unique(c(.x, .y))))))) |>
+        unnest(stan_data) |>
+        nest(.key = "stan_data") |> 
+        mutate(category = "MA_Turf") |>
+        group_by(category)
+      ## stan_models <- benthic_posteriors_global_V2 |> pull(category) |> unique() |> sort()
+      stan_models <- "global"
+
+      benthic_posteriors_global_algaes_V2 <-
+        benthic_posteriors_global_V2 |>
+        filter(!category %in% c("Hard coral", "Algae")) |> 
+        dplyr::select(-posteriors) |>
+        unnest(cellmeans) |>
+        ungroup(category) |>
+        nest(.key = "cellmeans") |> 
+        mutate(category = "MA_Turf") |> 
+        left_join(stan_data, by = "category") |>
+        ## left_join(data_xgboost,
+        ##           by = c("region", "subregion", "category")) |>
+        mutate(name = paste("global", "Macroalgae and Turf algae", sep = "_")) |>
+        ## mutate(plot = pdp_plots_algaes(
+        ##   cellmeans,
+        ##   dat = data.frame(a = 1),
+        ##   stan_data,
+        ##   name, simple_means = NA,
+        ##   stan_models = stan_models,
+        ##   type = "cellmeans_years", .scale = "global"))
+        mutate(plot = list(
+          parallel::mcmapply(FUN = pdp_plots_algaes,
+            cellmeans, dat = data.frame(a = 1), stan_data, name,
+            simple_means = NA,
+            MoreArgs = list(
+              stan_models = stan_models,
+              type = "cellmeans_years", .scale = "global"),
+            mc.cores = 40,
+            SIMPLIFY = FALSE, USE.NAMES = FALSE)
+        )) |>
+        mutate(plot = plot[[1]]) 
+        ## group_by(region) 
+      ## ----end
+      benthic_posteriors_global_algaes_V2
+    }),
     tar_target(summary_global_, {
       benthic_posteriors_global <- aggregate_global_plots_
       summarise_info <- summarise_info_
