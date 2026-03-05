@@ -1,0 +1,297 @@
+---
+title: "Comparing models - Global"
+author: "Murray Logan"
+date: today
+date-format: "DD/MM/YYYY"
+format:
+  html:
+    ## Format
+    theme: [default, resources/style.scss]
+    css: resources/style.css
+    html-math-method: mathjax
+    ## Table of contents
+    toc: true
+    toc-float: true
+    ## Numbering
+    number-sections: true
+    number-depth: 3
+    ## Layout
+    page-layout: full
+    fig-caption-location: "bottom"
+    fig-align: "center"
+    fig-width: 4
+    fig-height: 4
+    out-width: 500px
+    fig-dpi: 72
+    tbl-cap-location: top
+    ## Code
+    code-fold: false
+    code-tools: true
+    code-summary: "Show the code"
+    code-line-numbers: true
+    code-block-border-left: "#ccc"
+    code-copy: true
+    highlight-style: atom-one
+    ## Execution
+    execute:
+      echo: true
+      #cache: true
+    ## Rendering
+    embed-resources: true
+crossref:
+  fig-title: '**Figure**'
+  fig-labels: arabic
+  tbl-title: '**Table**'
+  tbl-labels: arabic
+engine: knitr
+## execute:
+##   cache: true
+jupyter: python3
+output_dir: "docs"
+documentclass: article
+fontsize: 12pt
+mainfont: Arial
+mathfont: LiberationMono
+monofont: DejaVu Sans Mono
+classoption: a4paper
+bibliography: resources/references.bib
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+knitr::opts_chunk$set(
+    cache.lazy = FALSE,
+    tidy = "styler"
+)
+## allow indented chunks
+assignInNamespace(".sep.label",
+  "^\\ *(#|--)+\\s*(@knitr|----+)(.*?)-*\\s*$",
+    ns = "knitr"
+)
+knitr::read_chunk("../R/process_spatial.R")
+knitr::read_chunk("../R/process_benthic_data.R")
+knitr::read_chunk("../R/fit_models.R")
+knitr::read_chunk("../R/aggregate_models.R")
+knitr::read_chunk("../R/helper_functions.R")
+## knitr::read_chunk("../python/incomplete_spatial.py")
+## remove the indentation from all python chunks that start
+## with indentation
+codes <- knitr::knit_code$get()
+process_chunks <- function(codes) {
+  nms <- names(codes)
+  wch <- which(startsWith(names(codes), "python"))
+  codes1 <- lapply(1:length(codes), function(i) {
+    if (i %in% wch) {
+      x <- gsub("^ {4}", "", codes[[i]])
+    } else {
+      x <- codes[[i]]
+    }
+    x
+  })
+  names(codes1) <- nms
+  codes1
+}
+knitr::knit_code$set(
+  process_chunks(codes)
+)
+
+options(tinytex.engine =  'xelatex')
+```
+
+```{css, echo=FALSE}
+figcaption {
+  text-align: left !important;
+}
+```
+
+```{r}
+#| label: packages
+#| echo: false
+#| eval: true
+#| cache: false
+#| warning: false
+#| message: false
+#| output: false
+library(tidyverse)
+library(kableExtra)
+```
+
+## Guide
+
+In each of the following sections:
+
+- the white line represents the posterior median of cover estimates
+  (Bayesian Heirarchical model)
+- the darkest orange band represents the 80% credibility interval of
+  cover estimates (Bayesian Heirarchical model)
+- the orange band represents the 95% credibility interval of the
+  cover estimates (Bayesian Heirarchical model)
+- the light orange band represents the 95% credibility interval of
+  cover estimates for years in which there were no observed data in
+  the presented spatial scale (e.g. Ecoregion, Subregion or Region)
+  (Bayesian Heirarchical model).
+
+```{r}
+#| label: read aggregate global plots
+#| eval: true
+#| echo: false
+#| warning: false
+#| message: false
+#| cache: false
+benthic_posteriors_global <- targets::tar_read("aggregate_global_plots_", store = "../R/_targets")
+summary_global <- targets::tar_read("summary_global_", store = "../R/_targets")
+summary_global_V2 <- targets::tar_read("summary_global_V2_", store = "../R/_targets")
+contrasts_global <- targets::tar_read("contrasts_global_", store = "../R/_targets")
+global_tbls <- targets::tar_read("global_tbls_", store = "../R/_targets")
+wts_global <- targets::tar_read("wts_global_", store = "../R/_targets") 
+spatial_lookup <- targets::tar_read("spatial_lookup_", store = "../R/_targets") 
+```
+
+```{r}
+#| label: aggregate global plots
+#| eval: true
+#| echo: false
+#| output: asis
+#| warning: false
+#| message: false
+#| cache: false
+## cat("::: {.panel-tabset}\n")
+dat_reg <- benthic_posteriors_global 
+cats <- sort(unique(dat_reg$category))
+cats <- setdiff(cats, "Other fauna")
+cats <- c(intersect(c("Hard coral", "Macroalgae"), cats),
+          setdiff(cats, c("Hard coral", "Macroalgae")))
+for (catg in cats) {
+  cat(paste0("## ", catg, "\n"))
+  ## Global level =====================================================================
+  data_reg <- benthic_posteriors_global |>
+    dplyr::filter(category == catg)
+  fig <- data_reg$plot[[1]]
+  fig2 <- str_replace(fig, "pdp", "pdprawxgboost")
+  fig2a <- str_replace(fig, "pdp", "pdp_bayes_a_V2")
+
+  cat("::: {.figure #fig-x}\n")
+  cat(paste0("![](", fig2a,"){width=400px}\n\n"))
+  cat(paste0("Modelled temporal trend (orange
+  ribbon with white line) in ", catg , " with overlayed observed data
+  (dots) for the Global.  The orange bands represent
+  80% and 95% (darker) credibility intervals.  Grey ribbon represents 
+  years for which there are no observed data.\n"))
+  cat(":::\n\n")
+
+  cat('::: {.callout-note collapse="true"}\n#### View weights\n')
+  cat("::: {#tbl-wts}\n")
+
+    wts_global |>
+      dplyr::select(Region=region,
+        Area=region_area,
+        Weight = wt
+      ) |>
+    knitr::kable() |>
+    print()
+    cat(paste0("Region reef area and weights applied in the aggregation up to the Global scale.\n"))
+    cat(":::\n")
+    cat(":::\n")
+    
+    cat("::: {.callout-note collapse=true}\n")
+    cat("#### Show data behind figure\n")
+    cat("::: {#tbl-data}\n")
+    summary_global_V2 |>
+      filter(category == catg) |>
+      _[["cellmeans_trim"]][[1]] |>
+      dplyr::select(-variable) |>
+      dplyr::mutate(across(c(median, lower, upper, lower_80, upper_80), \(x) round(x * 100, 2))) |>
+      # knitr::kable(caption = paste0("Estimated annual ", catg, " cover (%) at the Global scale.")) |>
+      knitr::kable() |>
+      print()
+    cat(paste0("Estimated annual ", catg, " cover (%) at the global scale.\n")) 
+    cat(":::\n")
+    cat(":::\n")
+    
+    cat("::: {.callout-note collapse=true}\n")
+    cat("#### Show contrasts\n")
+    cat("::: {#tbl-contr}\n")
+    contrasts_global |>
+      filter(category == catg) |>
+      _[["contrast_sum"]][[1]] |>
+      knitr::kable() |>
+      print()
+    cat(paste0("- ", 
+      contrasts_global |>
+        filter(category == catg) |>
+        _[["narrative"]][[1]]$interpretation, sep="\n\n")
+      )
+    cat(paste0("Contrasts between pairs of years for ", catg, " cover (%) at the Global scale.
+    For each contrast, results are expressed as absolute change (`abs`) and percentage 
+    change (`frac`). Estimated start and end values are also presented. Negative values 
+    indicate declines between the pairs of years. `Pl` and `Pg` represent the probability 
+    of decline and increase respectively.\n"))
+    cat(":::\n")
+    cat(":::\n")
+
+    cat("::: {#tbl-summ}\n")
+    global_tbls |>
+      filter(category == catg) |>
+      _[["tbl"]][[1]] |>
+      str_replace_all("\\.\\./\\.\\./", "../") |>
+      str_replace_all("lightable-paper", "table") |>
+      cat()
+
+    cat(paste0("Change in ", catg, " cover (%) for each Region (and
+       Global aggregate at the bottom) depicted as a simplified
+       temporal trend as well as the direction of change (arrow)
+       between a reference period (< 2010, red line on trends) and the
+       2020s (blue line on trends). Values immediately to the left and
+       right of the arrows represent the average cover for the
+       reference and 2020s respectively.  Values in brackets represent
+       the percentage change in percentage cover between the reference
+       and 2020s. Weights used to aggregate from Subregion to Region
+       are represented by doughnut plots with actual weights displayed
+       above doughnuts. Confidence in whether there was a change in
+       cover between the reference and 2020s is expressed as a signal
+       strength based on Bayesian exceedence probabilities (no bars:
+       Pr(Δ>0) < 0.85 (no evidence), one bar: Pr(Δ>0) < 0.90 (weak
+       evidence), two bars: Pr(Δ>0) < 0.95 (evidence), three bars:
+       Pr(Δ>0) < 1.00 (strong evidence), four bars Pr(Δ>0) = 1.00).
+       \n"))
+     cat(":::\n\n")
+}
+```
+
+```{r}
+#| label: aggregate global plots MA_Turf
+#| eval: true
+#| echo: false
+#| output: asis
+#| warning: false
+#| message: false
+#| cache: false
+new_catg <- "Macroalgae and Turf algae"
+catg <- "Macroalgae"
+cat(paste0("## ", new_catg, "\n"))
+cat("This section is simply to represent Macroalgae and 
+Turf algae in the same figure. Please refer to the individual 
+(above) sections on Macroalgae and Turf algae
+for more detailed information.
+\n\n")
+  
+## Global level =====================================================================
+data_reg <- benthic_posteriors_global |>
+  dplyr::filter(category == catg)
+
+fig <- data_reg$plot[[1]]
+fig2a <- str_replace(fig, "pdp", "pdp_bayes_a_V2")
+fig2a <- str_replace(fig2a, "Macroalgae", "global_Macroalgae and Turf algae")
+
+cat("::: {.figure #fig-x}\n")
+cat(paste0("![](", fig2a,"){width=400px}\n\n"))
+cat(paste0("Modelled temporal trend in Macroalgae (green
+  ribbon with white line) and Turf algae (blue ribbon with white line)  
+  for the Global scale.  The green and blue bands represent
+  80% and 95% (darker) credibility intervals.  Grey ribbon represents 
+  years for which there are no observed data.\n"))
+cat(":::\n\n")
+```
+    

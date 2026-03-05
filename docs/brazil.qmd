@@ -631,7 +631,8 @@ for (catg in cats) {
     For each contrast, results are expressed as absolute change (`abs`) and percentage 
     change (`frac`). Estimated start and end values are also presented. Negative values 
     indicate declines between the pairs of years. `Pl` and `Pg` represent the probability 
-    of decline and increase respectively.\n"))
+    of decline and increase respectively. `Ref` refers to the period prior to 2010 and 
+    `Ref2` refers to the perior prior to 1998.\n"))
     cat(":::\n")
     cat(":::\n")
 
@@ -730,4 +731,4 @@ cat(paste0("Modelled temporal trend in Macroalgae (green
   years for which there are no observed data.\n"))
 cat(":::\n\n")
 ```
-
+        

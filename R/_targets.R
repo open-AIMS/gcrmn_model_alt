@@ -3,6 +3,7 @@
 ## docker run --rm -it -v $PWD:/home/Project gcrmn_alt
 ## OR
 ## singularity exec -B .:/home/Project gcrmn_alt2.sif R
+## singularity exec -B .:/home/Project r-analysis2.sif R
 ## setwd("R")
 
 # Load the targets package

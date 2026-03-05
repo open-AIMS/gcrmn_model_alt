@@ -1366,7 +1366,6 @@ summary_figures <- function() {
           ##   label = round(wt,2),
           ##   size = 3,
           ##   fontface = "bold")
-        
         filenm <- paste0(doughnut_file)
         ggsave(file = filenm, plot = g, width = 100, height = 100, units = "px", dpi = 300) |>
           suppressWarnings() |> suppressMessages()
@@ -1568,41 +1567,6 @@ summary_figures <- function() {
         }
 
         if (format == "html") {
-          ## tbl <- long_term_change |>
-          ##   ungroup() |> 
-          ##   mutate(Trend = "") |>
-          ##   mutate(change = case_when(
-          ##     Pl >= 0.85 | Pg >= 0.85 ~ TRUE,
-          ##     is.na(Pl) | is.na(Pg) ~ FALSE,
-          ##     .default = FALSE)) |> 
-          ##   mutate(Direction = arrow_from_value(median, scale = 1, catg = category,
-          ##     change = change)) |> 
-          ##   mutate(N = 1:n()) |>
-          ##   mutate(Weight = "")
-          ## if (sortting_order == "alphabetical") {
-          ##   sort_order <- 1:nrow(tbl)
-          ## } else if (sortting_order == "change") {
-          ##   tbl <- tbl |> 
-          ##     mutate(median_for_order = case_when(
-          ##       is.na(median) ~ 0,
-          ##       N == max(N) ~ Inf,
-          ##       .default = median)) |> 
-          ##     mutate(change_for_order = case_when(
-          ##       is.infinite(median_for_order) ~ 1,
-          ##       change & median < 0 ~ -1,
-          ##       !change | median == 0 ~ 0,
-          ##       change & median > 0 ~ 1
-          ##     )) |> 
-          ##     arrange(change_for_order, median_for_order) |> 
-          ##     dplyr::select(-median_for_order, -change_for_order) 
-          ##   sort_order <- tbl$N
-          ## } else if (sorting_order == "weights") {
-          ##   tbl <- tbl |>
-          ##     arrange(desc(wt))
-          ##   sort_order <- tbl$N
-          ## } else {
-          ##   sort_order <- 1:nrow(tbl)
-          ## }
           tbl <- dat |> #tbl |> 
             select(-N) |> 
             mutate(median = case_when(
@@ -1651,7 +1615,7 @@ summary_figures <- function() {
             ) |> 
             column_spec(5, image = spec_image(confidence, width = 100, height = 100)) |> 
             column_spec(4, image = spec_image(doughnut, width = 150, height = 150)) |> 
-            column_spec(2, image = spec_image(sparkline, width = 300, height = 100)) |> 
+            column_spec(2, image = spec_image(sparkline[sort_order], width = 300, height = 100)) |> 
             kable_paper(full_width = FALSE)
         } else {
           confidence <- gsub(".svg", ".png", confidence)

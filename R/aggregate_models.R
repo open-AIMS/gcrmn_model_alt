@@ -575,14 +575,42 @@ aggregate_models <- function() {
     tar_target(user_contrasts_, {
       ## ---- user contrasts
       contr <- tribble(
-        ~name, ~start_yrs, ~end_yrs,
-        "2015 vs 2018", 2015, 2018,
-        "2018 vs 2024", 2018, 2024,
-        "2000s vs 2010s", 2000:2009, 2010:2019,
-        "2010s vs 2020s", 2010:2019, 2020:2024,
-        "2000s vs 2020s", 2000:2009, 2020:2024,
-        "Ref vs 2020s", 1973:2009, 2020:2024,
-        "Ref2 vs 2020s", 1973:1997, 2020:2024,
+        ~name, ~start_yrs, ~end_yrs, ~Region,
+        "2015 vs 2018", 2015, 2018, "All",
+        "2018 vs 2024", 2018, 2024, "All",
+        "2000s vs 2010s", 2000:2009, 2010:2019, "All",
+        "2010s vs 2020s", 2010:2019, 2020:2024, "All",
+        "2000s vs 2020s", 2000:2009, 2020:2024, "All",
+        "Ref vs 2020s", 1973:2009, 2020:2024, "All",
+        "Ref2 vs 2020s", 1973:1997, 2020:2024, "All",
+        "2017/18 vs 2023/24", 2017:2018, 2023:2024,  "PERSGA",
+        "1988 vs 1994", 1988, 1994,  "Australia",
+        "1994 vs 1998", 1994, 1998,  "Australia",
+        "1998 vs 2002", 1998, 2002,  "Australia",
+        "2003 vs 2009", 2003, 2009,  "Australia",
+        "2010 vs 2014", 2010, 2014,  "Australia",
+        "2015 vs 2018", 2015, 2018,  "Australia",
+        "2018 vs 2024", 2018, 2024,  "Australia",
+        "2000 vs 2010", 2000, 2010,  "Australia",
+        "2014 vs 2015", 2014, 2015,  "Australia",
+        "2018 vs 2023", 2018, 2023,  "Australia",
+        "2002 vs 2010", 2002, 2010,  "Brazil",
+        "2002 vs 2016", 2002, 2016,  "Brazil",
+        "2016 vs 2019", 2016, 2019,  "Brazil",
+        "2016 vs 2024", 2016, 2024,  "Brazil",
+        "2019 vs 2024", 2019, 2024,  "Brazil",
+        "2010 vs 2024", 2010, 2024,  "Brazil",
+        "1994 vs 2007", 1994, 2007,  "ETP",
+        "2007 vs 2014", 2007, 2014,  "ETP",
+        "2014 vs 2017", 2014, 2017,  "ETP",
+        "2017 vs 2021", 2017, 2021,  "ETP",
+        "2021 vs 2025", 2021, 2025,  "ETP",
+        "1998 vs 2000", 1998, 2000,  "Caribbean",
+        "2005 vs 2007", 2005, 2007,  "Caribbean",
+        "2010 vs 2012", 2010, 2012,  "Caribbean",
+        "2013 vs 2024", 2013, 2024,  "Caribbean",
+        "2015 vs 2018", 2015, 2018,  "Caribbean",
+        "2022 vs 2024", 2022, 2024,  "Caribbean",
         )
       ## ----end
       contr
@@ -711,15 +739,20 @@ aggregate_models <- function() {
       contrasts_subregions <- benthic_posteriors_subregions |>
         left_join(stan_data)
       contrasts_subregions <- contrasts_subregions |> 
-        mutate(contrast = map2(.x = posteriors, .y = exclude_years,
+        ## mutate(contrast = map2(.x = posteriors, .y = exclude_years,
+        mutate(contrast = pmap(.l = list(posteriors, exclude_years, region),
           .f = ~ {
+            .x <- ..1
+            .y <- ..2
+            reg <- ..3
             if (exclude_prior_years) {  ## adjust the contrasts to exclude prior years
               exclude_years <- .y
               contr <- contr |>
                 mutate(start_yrs = map(.x = start_yrs,
                   .f = ~ .x[!.x %in% exclude_years])) |> 
                 mutate(end_yrs = map(.x = end_yrs,
-                  .f = ~ .x[!.x %in% exclude_years])) 
+                  .f = ~ .x[!.x %in% exclude_years])) |>
+                filter(Region %in% c(reg, "All"))
             }
             .x |> 
               group_by(.draw) |>
@@ -733,6 +766,7 @@ aggregate_models <- function() {
                 cm_2[cm_2<0] <- 0
                 res_1 <- as.numeric(.x %*% cm_1)
                 res_2 <- as.numeric(.x %*% cm_2)
+                res_frac <- res_2 / res_1                    # this is arithmetic (use this)
                 for (j in 1:ncol(cm_1)) {
                  if (sum(cm_1[,j]) == 0) {
                   res_abs[j] <- res_frac[j] <- res_1[j] <- rep(NA, length(res_frac[j]))
@@ -820,28 +854,34 @@ aggregate_models <- function() {
       contrasts_regions <- benthic_posteriors_regions |>
         left_join(stan_data)
       contrasts_regions <- contrasts_regions |>
-        mutate(contrast = map2(.x = posteriors, .y = exclude_years,
+        ## mutate(contrast = map2(.x = posteriors, .y = exclude_years,
+        mutate(contrast = pmap(.l = list(posteriors, exclude_years, region),
           .f = ~ {
+            .x <- ..1
+            .y <- ..2
+            reg <- ..3
             if (exclude_prior_years) {  ## adjust the contrasts to exclude prior years
               exclude_years <- .y
               contr <- contr |>
                 mutate(start_yrs = map(.x = start_yrs,
                   .f = ~ .x[!.x %in% exclude_years])) |> 
                 mutate(end_yrs = map(.x = end_yrs,
-                  .f = ~ .x[!.x %in% exclude_years])) 
+                  .f = ~ .x[!.x %in% exclude_years])) |>
+                filter(Region %in% c(reg, "All"))
             }
             .x |> 
               group_by(.draw) |>
               reframe(across(value, ~ {
                 cm <- make_contrast_matrix(Year, contr)
                 res_abs <- as.numeric(.x %*% cm) 
-                res_frac <- exp(as.numeric(log(.x) %*% cm))
+                res_frac <- exp(as.numeric(log(.x) %*% cm))  # this is geometric
                 cm_2 <- cm_1 <- cm
                 cm_1[cm_1>0] <- 0
                 cm_1[cm_1<0] <- -1 * cm_1[cm_1<0]
                 cm_2[cm_2<0] <- 0
                 res_1 <- as.numeric(.x %*% cm_1)
                 res_2 <- as.numeric(.x %*% cm_2)
+                res_frac <- res_2 / res_1                    # this is arithmetic (use this)
                 ## data.frame(contrast = rep(colnames(cm), 2),
                 ##   type = rep(c("abs", "frac"), each = length(colnames(cm))),
                 ##   value = c(res_abs, res_frac)
@@ -916,6 +956,7 @@ aggregate_models <- function() {
       contrasts_global <- benthic_posteriors_global |>
         mutate(contrast = map(.x = posteriors,
           .f = ~ {
+            contr <- contr |> filter(Region == "All")
             .x |> 
               group_by(.draw) |>
               reframe(across(value, ~ {
@@ -928,6 +969,7 @@ aggregate_models <- function() {
                 cm_2[cm_2<0] <- 0
                 res_1 <- as.numeric(.x %*% cm_1)
                 res_2 <- as.numeric(.x %*% cm_2)
+                res_frac <- res_2 / res_1                    # this is arithmetic (use this)
                 ## data.frame(contrast = rep(colnames(cm), 2),
                 ##   type = rep(c("abs", "frac"), each = length(colnames(cm))),
                 ##   value = c(res_abs, res_frac)
