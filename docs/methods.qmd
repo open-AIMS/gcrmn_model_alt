@@ -552,7 +552,7 @@ level 3/.style={sibling distance = 1.5cm, level distance = 1.5cm},
 every tree node/.style={align=north,anchor=north}
 ]
 \draw [fill=black!0] (-7cm,0.2cm) -- ++(12cm,0cm) -- ++(0cm,-9cm) -- ++(-12cm,0cm) -- ++(0cm,9cm);
-\node [labelText, anchor=north west] at(-7,0) {a)};
+\node [labelText, anchor=north west] at(-7,0) {A)};
 \path
 node {}
 child {node [labelText] (E1) {Ecoregion} edge from parent[draw=none]
@@ -598,7 +598,7 @@ level 2/.style={sibling distance = 1.5cm, level distance = 1.2cm},
 level 3/.style={sibling distance = 2.0cm, level distance = 1.5cm}
 ]
 \draw [fill=black!5] (-7cm,0.2cm) -- ++(9.0cm,0cm) -- ++(0cm,-9cm) -- ++(-9.0cm,0cm) -- ++(0cm,9cm);
-\node [labelText, anchor=north west] at(-7,0) {b)};
+\node [labelText, anchor=north west] at(-7,0) {B)};
 \path
 node {}
 child {node [labelText] (G1) {Global} edge from parent[draw=none]
@@ -629,11 +629,11 @@ child{node [labelText] (R3) {R3}
 edge from parent node [right] {$\omega_{r_3}$}
 }
 };
-\draw [anchor=west] ($(R1.west) + (-4.9cm,0)$) node [labelText] (Region) {\begin{minipage}[h]{1.5cm}GCRMN\\ Region\end{minipage}};
+\draw [anchor=west] ($(R1.west) + (-4.9cm,0)$) node [labelText] (Region) {\begin{minipage}[h]{1.5cm}Region\end{minipage}};
 \draw [dashed] (Region) -- (R1);
-\draw [anchor=west] ($(Region.west |- SR2.center)$) node [labelText] (Subregion) {\begin{minipage}[h]{2cm}GCRMN\\Subregion\end{minipage}};
+\draw [anchor=west] ($(Region.west |- SR2.center)$) node [labelText] (Subregion) {\begin{minipage}[h]{2cm}Subregion\end{minipage}};
 \draw [dashed] (Subregion) -- (SR1);
-\draw [anchor=west] ($(Region.west |- E1.center)$) node [labelText] (Ecoregion) {\begin{minipage}[h]{2cm}MEOW\\Ecoregion\end{minipage}};
+\draw [anchor=west] ($(Region.west |- E1.center)$) node [labelText] (Ecoregion) {\begin{minipage}[h]{2cm}Ecoregion\end{minipage}};
 \draw [dashed] (Ecoregion) -- (E1);
 \draw [anchor=west] (Region.west |- Y.center) node [labelText] (Year) {Year};
 \path [draw, Messy,decorate, decoration={brace, amplitude=8pt}] (Y.south west) -- (Y.north west);
@@ -644,11 +644,18 @@ edge from parent node [right] {$\omega_{r_3}$}
 
 ```
 
+```{bash}
+#| label: convert schematic
+#| eval: false
+#| echo: false
+magick -density 600 resources/schematicHierarchy.pdf -resize 1800x resources/schematicHierarchy-1.png
+```
+
 ::: {.figure #fig-schematichierarchy}
 ![](resources/schematicHierarchy-1.png){width=600px}
 
-Schematic representation of the a) individual MEOW Ecoregion Bayesian
-modelling hierarchies and b) spatial aggregation hierarchy.  Note the
+Schematic representation of the A) individual MEOW Ecoregion Bayesian
+modelling hierarchies and B) spatial aggregation hierarchy.  Note the
 quadrat-level is de-emphasized to highlight that not all data sources
 include this unit of observation.  The $\omega$ symbolise the use of
 spatial weights.
@@ -688,6 +695,386 @@ Ecoregions were further grouped up into GCRMN sub-regions and regions
 modelling and reporting granularity.
 
 ::: {.figure #fig-schematic}
+
+```{tikz}
+%| label: fig-schematic_final_version
+%| engine: tikz
+%| eval: false
+%| echo: false
+%| class: tikz
+%| out-width: 600px
+%| engine-opts:
+%|   template: "resources/tikz-standalone.tex"
+\pgfdeclarelayer{background}
+\pgfdeclarelayer{level1}
+\pgfdeclarelayer{level2}
+\pgfdeclarelayer{level3}
+\pgfdeclarelayer{level4}
+\pgfdeclarelayer{level5}
+\pgfsetlayers{background,level1,level2,level3,level4,level5}
+\sf
+
+\begin{tikzpicture}[scale=0.9, every node/.style={minimum size=1cm}]
+
+  \newcommand{\reefA}[4]{\draw [draw=white!80!blue,inner color=blue!40!white, outer color=white] plot [smooth cycle, scale=#1,xshift=#2, yshift=#3,rotate=#4] coordinates {(0,0) ++(1,1.3) ++(-0.2,0.5)++(-0.6,-0.1)};}
+  \newcommand{\reefAA}[4]{\draw [fill=red,anchor=center] plot [smooth cycle, scale=#1,xshift=0, yshift=#3,rotate=#4] coordinates {(0+#2,0+#3) ++(1+#2,1.3+#3) ++(-0.2+#2,0.5+#3)++(-0.6+#2,-0.1+#3)} ;}
+  \newcommand{\reefB}[4]{\draw [draw=white!80!blue,inner color=blue!40!white, outer color=white] plot [smooth cycle, scale=#1,xshift=#2, yshift=#3,rotate=#4] coordinates {(0,0) (1,0.1) (2,0.3) (2,1.4) (1.5,2.5) (0.8,2.5) (0.3,1.2) (-0.2,0.6) } ;}
+  \newcommand{\reefC}[4]{\draw [draw=white!80!blue,inner color=blue!40!white, outer color=white] plot [smooth cycle, scale=#1,xshift=#2, yshift=#3,rotate=#4] coordinates {(0,0) (1,0.4) (2,0.3) (2,1.4) (0.9,0.8) (0.3,1.0)(-0.2,0.6) } ;}
+
+  \begin{pgfonlayer}{background}
+    \begin{scope}[yshift=10,every node/.append style={yslant=0.5,xslant=1},yslant=0.5,xslant=-2]
+      \draw[black,very thick,top color=blue!20, bottom color=blue!20, middle color=blue!50] (0,0) rectangle (5,5);%marking borders
+      \coordinate (layer1_1) at (5,5);
+      \reefA{0.6}{20}{10}{0};\coordinate (L11) at (1,1);
+      \reefA{0.6}{70}{40}{45};\coordinate (L12) at (1.3,0.8);
+      \reefB{0.4}{150}{20}{0};\coordinate (L13) at (2.9,0.5);
+      \reefC{0.4}{280}{60}{30};\coordinate (L15) at (4.0,1.2);
+      \reefB{0.1}{1200}{80}{80};\coordinate (L14) at (4.0,0.5);
+      \reefB{0.05}{2200}{160}{-80};
+      \reefA{0.3}{400}{100}{-160};\coordinate (L16) at (4.2,0.9);
+      \reefC{0.2}{140}{300}{90}; \coordinate (L17) at (0.9,2.2);
+      \reefB{0.3}{250}{250}{-95};\coordinate (L18) at (2.7,2.2);
+      \reefA{0.2}{600}{400}{180};\coordinate (L19) at (4.2,2.8);
+      \reefA{0.3}{300}{300}{-45};\coordinate (L120) at (3.2,3.3);
+      \reefB{0.3}{150}{350}{-45};\coordinate (L121) at (2.2,3.6);
+
+      \reefA{0.4}{300}{300}{180};
+      \reefC{0.4}{180}{300}{10};
+      \coordinate (L1Title) at (2,4.7);
+    \end{scope}
+    \node [rotate=27, anchor=south] at (L1Title) {Observations (Reefs)};
+    \draw [scale=0.6,fill=black] (L11) circle(0.1);
+    \draw [scale=0.6,fill=black] (L12) circle(0.1);
+    \draw [scale=0.6,fill=black] (L13) circle(0.1);
+    \draw [scale=0.6,fill=black] (L14) circle(0.1);
+    \draw [scale=0.6,fill=black] (L15) circle(0.1);
+    \draw [scale=0.6,fill=black] (L16) circle(0.1);
+    \draw [scale=0.6,fill=black] (L17) circle(0.1);
+    \draw [scale=0.6,fill=black] (L18) circle(0.1);
+    \draw [scale=0.6,fill=black] (L19) circle(0.1);
+    \draw [scale=0.6,fill=black] (L120) circle(0.1);
+    \draw [scale=0.6,fill=black] (L121) circle(0.1);
+  \end{pgfonlayer}
+  \begin{pgfonlayer}{level1}
+    \begin{scope}[yshift=100,every node/.append style={yslant=0.5,xslant=1},yslant=0.5,xslant=-2]
+      \draw[black,very thick, fill=white, fill opacity=0.7] (0,0) rectangle (5,5);%marking borders
+      \draw[step=2mm, black!20] (0,0) grid (5,5); %defining grids
+      \coordinate (layer2_1) at (5,5);
+      \coordinate (L21) at (1,1);
+      \coordinate (L22) at (1.3,0.8);
+      \coordinate (L23) at (2.9,0.5);
+      \coordinate (L24) at (4.0,0.5);
+      \coordinate (L25) at (4.0,1.2);
+      \coordinate (L26) at (4.2,0.9);
+      \coordinate (L27) at (0.9,2.2);
+      \coordinate (L28) at (2.7,2.2);
+      \coordinate (L29) at (4.2,2.8);
+      \coordinate (L220) at (3.2,3.3);
+      \coordinate (L221) at (2.2,3.6);
+      \fill[red] (8mm,8mm) rectangle ++ (2mm,2mm);\fill[black] (9mm,9mm) circle(0.3mm);
+      \fill[red] (6mm,6mm) rectangle ++ (2mm,2mm);\fill[black] (7mm,7mm) circle(0.3mm);
+      \fill[red] (4mm,4mm) rectangle ++ (2mm,2mm);\fill[black] (5mm,5mm) circle(0.3mm);
+      \fill[red] (2mm,4mm) rectangle ++ (2mm,2mm);\fill[black] (3mm,5mm) circle(0.3mm);
+      \fill[red] (2mm,2mm) rectangle ++ (2mm,2mm);\fill[black] (3mm,3mm) circle(0.3mm);
+      \coordinate (L22) at (1.3,0.8);
+      \fill[red] (12mm,6mm) rectangle ++ (2mm,2mm);\fill[black] (13mm,7mm) circle(0.3mm);
+      \fill[red] (12mm,8mm) rectangle ++ (2mm,2mm);\fill[black] (13mm,9mm) circle(0.3mm);
+      \fill[red] (12mm,10mm) rectangle ++ (2mm,2mm);\fill[black] (13mm,11mm) circle(0.3mm);
+      \fill[red] (12mm,12mm) rectangle ++ (2mm,2mm);\fill[black] (13mm,13mm) circle(0.3mm);
+      \fill[red] (12mm,14mm) rectangle ++ (2mm,2mm);\fill[black] (13mm,15mm) circle(0.3mm);
+      \fill[red] (12mm,16mm) rectangle ++ (2mm,2mm);\fill[black] (13mm,17mm) circle(0.3mm);
+      \coordinate (L23) at (2.9,0.5);
+      \fill[red] (28mm,4mm) rectangle ++ (2mm,2mm);\fill[black] (29mm,5mm) circle(0.3mm);
+      \fill[red] (20mm,4mm) rectangle ++ (2mm,2mm);\fill[black] (21mm,5mm) circle(0.3mm);
+      \fill[red] (20mm,2mm) rectangle ++ (2mm,2mm);\fill[black] (21mm,3mm) circle(0.3mm);
+      \fill[red] (22mm,4mm) rectangle ++ (2mm,2mm);\fill[black] (23mm,5mm) circle(0.3mm);
+      \fill[red] (24mm,4mm) rectangle ++ (2mm,2mm);\fill[black] (25mm,5mm) circle(0.3mm);
+      \fill[red] (26mm,4mm) rectangle ++ (2mm,2mm);\fill[black] (27mm,5mm) circle(0.3mm);
+      \fill[red] (22mm,6mm) rectangle ++ (2mm,2mm);\fill[black] (23mm,7mm) circle(0.3mm);
+      \fill[red] (24mm,6mm) rectangle ++ (2mm,2mm);\fill[black] (25mm,7mm) circle(0.3mm);
+      \fill[red] (26mm,6mm) rectangle ++ (2mm,2mm);\fill[black] (27mm,7mm) circle(0.3mm);
+      \fill[red] (28mm,6mm) rectangle ++ (2mm,2mm);\fill[black] (29mm,7mm) circle(0.3mm);
+      \fill[red] (24mm,6mm) rectangle ++ (2mm,2mm);\fill[black] (25mm,7mm) circle(0.3mm);
+      \fill[red] (22mm,8mm) rectangle ++ (2mm,2mm);\fill[black] (23mm,9mm) circle(0.3mm);
+      \fill[red] (24mm,8mm) rectangle ++ (2mm,2mm);\fill[black] (25mm,9mm) circle(0.3mm);
+      \fill[red] (26mm,8mm) rectangle ++ (2mm,2mm);\fill[black] (27mm,9mm) circle(0.3mm);
+      \fill[red] (24mm,10mm) rectangle ++ (2mm,2mm);\fill[black] (25mm,11mm) circle(0.3mm);
+      \fill[red] (26mm,10mm) rectangle ++ (2mm,2mm);\fill[black] (27mm,11mm) circle(0.3mm);
+      \fill[red] (24mm,12mm) rectangle ++ (2mm,2mm);\fill[black] (25mm,13mm) circle(0.3mm);
+      \fill[red] (38mm,2mm) rectangle ++ (2mm,2mm);\fill[black] (39mm,3mm) circle(0.3mm);
+      \fill[red] (40mm,2mm) rectangle ++ (2mm,2mm);\fill[black] (41mm,3mm) circle(0.3mm);
+      \fill[red] (40mm,4mm) rectangle ++ (2mm,2mm);\fill[black] (41mm,5mm) circle(0.3mm);
+      \fill[red] (42mm,8mm) rectangle ++ (2mm,2mm);\fill[black] (43mm,9mm) circle(0.3mm);
+      \fill[red] (42mm,10mm) rectangle ++ (2mm,2mm);\fill[black] (43mm,11mm) circle(0.3mm);
+      \fill[red] (38mm,8mm) rectangle ++ (2mm,2mm);\fill[black] (39mm,9mm) circle(0.3mm);
+      \fill[red] (38mm,10mm) rectangle ++ (2mm,2mm);\fill[black] (39mm,11mm) circle(0.3mm);
+      \fill[red] (40mm,10mm) rectangle ++ (2mm,2mm);\fill[black] (41mm,11mm) circle(0.3mm);
+      \fill[red] (40mm,12mm) rectangle ++ (2mm,2mm);\fill[black] (41mm,13mm) circle(0.3mm);
+      \fill[red] (42mm,12mm) rectangle ++ (2mm,2mm);\fill[black] (43mm,13mm) circle(0.3mm);
+      \fill[red] (44mm,12mm) rectangle ++ (2mm,2mm);\fill[black] (45mm,13mm) circle(0.3mm);
+      \fill[red] (42mm,14mm) rectangle ++ (2mm,2mm);\fill[black] (43mm,15mm) circle(0.3mm);
+      \fill[red] (44mm,14mm) rectangle ++ (2mm,2mm);\fill[black] (46mm,15mm) circle(0.3mm);
+      \fill[red] (8mm,20mm) rectangle ++ (2mm,2mm);\fill[black] (9mm,21mm) circle(0.3mm);
+      \fill[red] (8mm,22mm) rectangle ++ (2mm,2mm);\fill[black] (9mm,23mm) circle(0.3mm);
+      \fill[red] (8mm,24mm) rectangle ++ (2mm,2mm);\fill[black] (9mm,25mm) circle(0.3mm);
+      \fill[red] (26mm,20mm) rectangle ++ (6mm,2mm);\fill[black] (27mm,21mm) circle(0.3mm);\fill[black] (29mm,21mm) circle(0.3mm);\fill[black] (31mm,21mm) circle(0.3mm);
+      \fill[red] (26mm,22mm) rectangle ++ (8mm,2mm);\fill[black] (27mm,23mm) circle(0.3mm);\fill[black] (29mm,23mm) circle(0.3mm);\fill[black] (31mm,23mm) circle(0.3mm);\fill[black] (33mm,23mm) circle(0.3mm);
+      \fill[red] (26mm,24mm) rectangle ++ (4mm,2mm);\fill[black] (27mm,25mm) circle(0.3mm);\fill[black] (29mm,25mm) circle(0.3mm);
+      \fill[red] (40mm,26mm) rectangle ++ (4mm,2mm);\fill[black] (41mm,27mm) circle(0.3mm);\fill[black] (43mm,27mm) circle(0.3mm);
+      \fill[red] (30mm,32mm) rectangle ++ (6mm,2mm);\fill[black] (31mm,33mm) circle(0.3mm);\fill[black] (33mm,33mm) circle(0.3mm);\fill[black] (35mm,33mm) circle(0.3mm);
+      \fill[red] (18mm,34mm) rectangle ++ (4mm,2mm);\fill[black] (19mm,35mm) circle(0.3mm);\fill[black] (21mm,35mm) circle(0.3mm);
+      \fill[red] (16mm,36mm) rectangle ++ (8mm,2mm);\fill[black] (17mm,37mm) circle(0.3mm);\fill[black] (19mm,37mm) circle(0.3mm);\fill[black] (21mm,37mm) circle(0.3mm);\fill[black] (23mm,37mm) circle(0.3mm);
+      \fill[red] (18mm,38mm) rectangle ++ (6mm,2mm);\fill[black] (19mm,39mm) circle(0.3mm);\fill[black] (21mm,39mm) circle(0.3mm);\fill[black] (23mm,39mm) circle(0.3mm);
+      \fill[red] (38mm,38mm) rectangle ++ (4mm,2mm);\fill[black] (39mm,39mm) circle(0.3mm);\fill[black] (41mm,39mm) circle(0.3mm);
+      \fill[red] (40mm,40mm) rectangle ++ (4mm,2mm);\fill[black] (41mm,41mm) circle(0.3mm);\fill[black] (43mm,41mm) circle(0.3mm);
+      \fill[red] (42mm,42mm) rectangle ++ (2mm,2mm);\fill[black] (43mm,43mm) circle(0.3mm);
+      \fill[red] (24mm,42mm) rectangle ++ (4mm,2mm);\fill[black] (25mm,43mm) circle(0.3mm);\fill[black] (27mm,43mm) circle(0.3mm);
+      \fill[red] (24mm,44mm) rectangle ++ (10mm,2mm);\fill[black] (25mm,45mm) circle(0.3mm);\fill[black] (27mm,45mm) circle(0.3mm);\fill[black] (29mm,45mm) circle(0.3mm);\fill[black] (31mm,45mm) circle(0.3mm);\fill[black] (33mm,45mm) circle(0.3mm);
+      \fill[red] (30mm,46mm) rectangle ++ (4mm,2mm);\fill[black] (31mm,47mm) circle(0.3mm);\fill[black] (33mm,47mm) circle(0.3mm);
+      \fill[red] (38mm,2mm) rectangle ++ (2mm,2mm);\fill[black] (39mm,3mm) circle(0.3mm);
+      \draw [scale=0.6,fill=black] (L21) circle(0.05);
+      \draw [scale=0.6,fill=black] (L22) circle(0.05);
+      \draw [scale=0.6,fill=black] (L23) circle(0.05);
+      \draw [scale=0.6,fill=black] (L24) circle(0.05);
+      \draw [scale=0.6,fill=black] (L25) circle(0.05);
+      \draw [scale=0.6,fill=black] (L26) circle(0.05);
+      \draw [scale=0.6,fill=black] (L27) circle(0.05);
+      \draw [scale=0.6,fill=black] (L28) circle(0.05);
+      \draw [scale=0.6,fill=black] (L29) circle(0.05);
+      \draw [scale=0.6,fill=black] (L220) circle(0.05);
+      \draw [scale=0.6,fill=black] (L221) circle(0.05);
+      \draw [color=blue] (0,16mm) -- ++(11mm,0) -- ++(0,-16mm);
+      \draw [color=blue] (11mm,16mm) -- ++(9mm,0) -- ++(0,-16mm);
+      \draw [color=blue] (0mm,30mm) -- ++(14mm,0) -- ++(0,-4mm) -- ++(6mm,0) -- ++(0,-10mm);
+      \draw [color=blue] (0mm,30mm) -- ++(14mm,0) -- ++(0,-4mm) -- ++(6mm,0) -- ++(0,4mm) -- ++(6mm,0) -- ++(0,4mm) --++(2mm,0)--++(0,6mm)--++(6mm,0mm)--++(0mm,2mm)--++(4mm,0)--++(0,4mm)--++(4mm,0)--++(0,4mm);
+      \draw [color=blue] (26mm,30mm) -- ++(10mm,0) -- ++(0,-14mm)--++(-16mm,0);
+      \draw [color=blue] (34mm,16mm) -- ++(0mm,-16mm);
+      \draw [color=blue] (34mm,6mm) -- ++(16mm,0mm);
+      \draw [color=blue] (36mm,20mm) -- ++(14mm,0mm);
+      \draw [color=blue] (36mm,30mm) -- ++(4mm,0mm)--++(0,4mm)--++(10mm,0);
+      \draw [color=blue] (38mm,6mm) -- ++(0mm,2mm)-- ++(2mm,0mm)-- ++(0mm,2mm)-- ++(2mm,0mm)-- ++(0mm,2mm)-- ++(2mm,0mm)-- ++(0mm,2mm)-- ++(2mm,0mm)-- ++(0mm,2mm)-- ++(2mm,0mm)-- ++(0mm,2mm)-- ++(2mm,0mm);
+      \coordinate (L2Title) at (2,4.7);
+    \end{scope}
+    \node [rotate=27, anchor=south] at (L2Title) {Grid Tile};
+  \end{pgfonlayer}
+  \begin{pgfonlayer}{background}
+  % \draw (layer1_1)--(layer2_1);
+  \draw [solid](L11)--(L21);
+  \draw [solid](L12)--(L22);
+  \draw [solid](L13)--(L23);
+  \draw [solid](L14)--(L24);
+  \draw [solid](L15)--(L25);
+  \draw [solid](L16)--(L26);
+  \draw [solid](L17)--(L27);
+  \draw [solid](L18)--(L28);
+  \draw [solid](L19)--(L29);
+  \draw [solid](L120)--(L220);
+  \draw [solid](L121)--(L221);
+  \end{pgfonlayer}
+
+  \begin{pgfonlayer}{level2}
+    \begin{scope}[yshift=200,every node/.append style={yslant=0.5,xslant=1},yslant=0.5,xslant=-2]
+      \draw[black,very thick,fill=white,fill opacity=0.7] (0,0) rectangle (5,5);%marking borders
+      \draw [color=red] (0mm,30mm) -- ++(14mm,0) -- ++(0,-4mm) -- ++(6mm,0) -- ++(0,4mm) -- ++(6mm,0) -- ++(0,4mm) --++(2mm,0)--++(0,6mm)--++(6mm,0mm)--++(0mm,10mm);
+      \draw [color=red] (26mm,30mm) -- ++(14mm,0) --++(0,4mm)--++(10mm,0mm);
+      \draw [color=red] (0,16mm) -- ++(20mm,0) -- ++(0,-16mm);
+      \draw [color=red] (20mm,16mm) -- ++(16mm,0) -- ++(0,4mm)--++(14mm,0mm);
+      \draw [color=red,thick] (0mm,30mm) -- ++(14mm,0) -- ++(0,-4mm) -- ++(6mm,0) -- ++(0,4mm) -- ++(6mm,0) -- ++(14mm,0) --++(0,4mm)--++(10mm,0mm);
+      \coordinate (L31) at (1.6,4);
+      \coordinate (L32) at (4,4);
+      \coordinate (L33) at (2.5,2.4);
+      \coordinate (L34) at (1.1,0.9);
+      \coordinate (L35) at (3.5,0.9);
+      \coordinate (L3Title) at (2,4.7);
+    \end{scope}
+    \node [anchor=west,xslant=0,yslant=0,outer sep=0mm] at (L31) {E1};
+    \node [anchor=west,xslant=0,yslant=0,outer sep=0mm] at (L32) {E2};
+    \node [anchor=west,xslant=0,yslant=0,outer sep=0mm] at (L33) {E3};
+    \node [anchor=west,xslant=0,yslant=0,outer sep=0mm] at (L34) {E4};
+    \node [anchor=west,xslant=0,yslant=0,outer sep=0mm] at (L35) {E5};
+    \node [rotate=27, anchor=south] at (L3Title) {Ecoregions};
+  \end{pgfonlayer}
+
+  \begin{pgfonlayer}{level1}
+    \begin{scope}[every node/.append style={
+                  yslant=-0.0,xslant=0.0,scale=0.75,solid,pos=0.5,left,fill=white,
+      fill opacity=0, text opacity=1,minimum height=1em,inner sep=-10mm, outer sep=0mm}]
+      \draw [solid] (L221)--(L31) node  [pos=0.6,above,anchor=center] (L2A1) {};\draw  [<-] ($(L2A1) +(0mm,0)$)  .. controls ++(0.5mm,-3mm) and ++(1mm,0mm) .. ($(L2A1) +(2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=west] {1.0};
+      \draw [solid] (L220)--(L32) node [pos=0.4,above,anchor=center] (L2A2) {};\draw  [<-] ($(L2A2) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L2A2) +(-2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {1.0};
+      \draw [solid] (L29)--(L33) node [pos=0.5,above,anchor=center] (L2A3) {};\draw  [<-] ($(L2A3) +(0mm,0)$)  .. controls ++(0.5mm,-3mm) and ++(1mm,0mm) .. ($(L2A3) +(1.5mm,-2mm)$) node [outer sep=-0mm,at end, anchor=west] {0.13};
+      \draw [solid] (L28)--(L33) node [pos=0.45,above,anchor=center] (L2A4) {};\draw  [<-] ($(L2A4) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L2A4) +(-1.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.6};
+      \draw [solid] (L27)--(L33) node [pos=0.7,above,anchor=center] (L2A5) {};\draw  [<-] ($(L2A5) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L2A5) +(-1.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.27};
+
+      \draw [solid] (L26)--(L35) node [pos=0.7,above,anchor=center] (L2A6) {};\draw  [<-] ($(L2A6) +(0mm,0)$)  .. controls ++(0.5mm,-3mm) and ++(1mm,0mm) .. ($(L2A6) +(4.5mm,-2mm)$) node [outer sep=-0mm,at end, anchor=west] {0.10};
+      \draw [solid] (L25)--(L35) node [pos=0.3,above,anchor=center] (L2A7) {};\draw  [<-] ($(L2A7) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L2A7) +(-2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.25};
+      \draw [solid] (L24)--(L35) node [pos=0.3,above,anchor=center] (L2A8) {};\draw  [<-] ($(L2A8) +(0mm,0)$)  .. controls ++(0.5mm,-3mm) and ++(1mm,0mm) .. ($(L2A8) +(2.5mm,-2mm)$) node [outer sep=-0mm,at end, anchor=west] {0.10};
+      \draw [solid] (L23)--(L35) node [pos=0.6,above,anchor=center] (L2A9) {};\draw  [<-] ($(L2A9) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L2A9) +(-2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.55};
+
+      \draw [solid] (L22)--(L34) node [pos=0.7,above,anchor=center] (L2A10) {};\draw  [<-] ($(L2A10) +(0mm,0)$)  .. controls ++(0.5mm,-3mm) and ++(1mm,0mm) .. ($(L2A10) +(2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=west] {0.5};
+      \draw [solid] (L21)--(L34) node [pos=0.7,above,anchor=center] (L2A11) {};\draw  [<-] ($(L2A11) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L2A11) +(-1.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.5};
+    \end{scope}
+  \end{pgfonlayer}
+
+
+  % Subregions
+  \begin{pgfonlayer}{level3}
+    \begin{scope}[yshift=300,every node/.append style={yslant=0,xslant=0},yslant=0.5,xslant=-2]
+      \draw[black,very thick,fill=white,fill opacity=0.7] (0,0) rectangle (5,5);%marking borders
+      \draw [color=red,thick] (0mm,30mm) -- ++(14mm,0) -- ++(0,-4mm) -- ++(6mm,0) -- ++(0,4mm) -- ++(6mm,0) -- ++(14mm,0) --++(0,4mm)--++(10mm,0mm);
+      \draw [color=red] (0,16mm) -- ++(20mm,0);
+      \draw [color=red] (20mm,16mm) -- ++(16mm,0) -- ++(0,4mm)--++(14mm,0mm);
+
+      \coordinate (L41) at (2.5,4);%\node [xslant=-2, yslant=0.5, rotate=-60] at (L4) {0.38};
+      \coordinate (L42) at (2.5,2.4);
+      \coordinate (L43) at (2.5,0.9);
+
+      \coordinate (L4Title) at (2,4.7);
+      \node [anchor=west,xslant=0,yslant=0,outer sep=0mm] at (L41) {S1};
+      \node [anchor=west,xslant=0,yslant=0] at (L42) {S2};
+      \node [anchor=west,xslant=0,yslant=0] at (L43) {S3};
+
+    \end{scope}]
+    \node [rotate=27, anchor=south] at (L4Title) {Subregions};
+  \end{pgfonlayer}
+
+  \begin{pgfonlayer}{level2}
+    \begin{scope}[every node/.append style={
+                  yslant=-0.0,xslant=0.0,scale=0.75,solid,pos=0.5,left,fill=white,
+      fill opacity=0, text opacity=1,minimum height=1em,inner sep=-10mm, outer sep=0mm}]
+      \draw [solid, *-] (L31)--(L41) node  [pos=0.6,above,anchor=center] (L3A1) {};\draw  [<-] ($(L3A1) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L3A1) +(-2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.69};
+      \draw [solid, *-] (L32)--(L41) node  [pos=0.4,above,anchor=center] (L3A2) {};\draw  [<-] ($(L3A2) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L3A2) +(-2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.31};
+      \draw [solid, *-] (L33)--(L42) node  [pos=0.5,above,anchor=center] (L3A3) {};\draw  [<-] ($(L3A3) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L3A3) +(-3.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {1.0};
+      \draw [solid, *-] (L34)--(L43) node  [pos=0.6,above,anchor=center] (L3A4) {};\draw  [<-] ($(L3A4) +(0mm,0)$)  .. controls ++(0.5mm,-3mm) and ++(1mm,0mm) .. ($(L3A4) +(2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=west] {0.26};
+      \draw [solid, *-] (L35)--(L43) node  [pos=0.5,above,anchor=center] (L3A5) {};\draw  [<-] ($(L3A5) +(0mm,0)$)  .. controls ++(1mm,-3mm) and ++(1mm,0mm) .. ($(L3A5) +(4.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=west] {0.74};
+    \end{scope}
+  \end{pgfonlayer}
+
+
+
+  % Regions
+  \begin{pgfonlayer}{level4}
+    \begin{scope}[yshift=400,every node/.append style={yslant=0,xslant=0},yslant=0.5,xslant=-2]
+      \draw[black,very thick,fill=white,fill opacity=0.7] (0,0) rectangle (5,5);%marking borders
+      \draw [color=red,thick] (0mm,30mm) -- ++(14mm,0) -- ++(0,-4mm) -- ++(6mm,0) -- ++(0,4mm) -- ++(6mm,0) -- ++(14mm,0) --++(0,4mm)--++(10mm,0mm);
+      \coordinate (L51) at (2.5,4);%\node [xslant=-2, yslant=0.5, rotate=-60] at (L5) {0.38};
+      \coordinate (L52) at (2.5,1.5);
+      \coordinate (L5Title) at (2,4.7);
+      \node [anchor=west,xslant=0,yslant=0,outer sep=0mm] at (L51) {R1};
+      \node [anchor=west,xslant=0,yslant=0] at (L52) {R2};
+    \end{scope}]
+    \node [rotate=27, anchor=south] at (L5Title) {Regions};
+  \end{pgfonlayer}
+  \begin{pgfonlayer}{level3}
+    \begin{scope}[every node/.append style={
+                  yslant=-0.0,xslant=0.0,scale=0.75,solid,pos=0.5,left,fill=white,
+      fill opacity=0, text opacity=1,minimum height=1em,inner sep=-10mm, outer sep=0mm}]
+      \draw [solid, *-] (L41)--(L51) node  [pos=0.6,above,anchor=center] (L4A1) {};\draw  [<-] ($(L4A1) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L4A1) +(-2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {1.00};
+      \draw [solid, *-] (L42)--(L52) node  [pos=0.5,above,anchor=center] (L4A2) {};\draw  [<-] ($(L4A2) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L4A2) +(-2.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.28};
+      \draw [solid, *-] (L43)--(L52) node  [pos=0.5,above,anchor=center] (L4A3) {};\draw  [<-] ($(L4A3) +(0mm,0)$)  .. controls ++(-0.5mm,-3mm) and ++(-1mm,0mm) .. ($(L4A3) +(-3.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.72};
+    \end{scope}
+  \end{pgfonlayer}
+
+  \begin{pgfonlayer}{level5}
+    \begin{scope}[yshift=500,xshift=-0,every node/.append style={yslant=0,xslant=1},yslant=0.5,xslant=-2]
+      \draw[black,very thick,fill=white, fill opacity=0.7] (0,0) rectangle (5,5);%marking borders
+      \coordinate (L61) at (2.5,2.5);
+      \coordinate (L6Title) at (2,4.7);
+    \end{scope}
+    \node [rotate=27, anchor=south] at (L6Title) {Global};
+  \end{pgfonlayer}
+
+  \begin{pgfonlayer}{level4}
+    \begin{scope}[every node/.append style={
+                  yslant=-0.0,xslant=0.0,scale=0.75,solid,pos=0.5,left,fill=white,
+      fill opacity=0, text opacity=1,minimum height=1em,inner sep=-10mm, outer sep=0mm}]
+      \draw [solid, *-] (L51)--(L61) node  [pos=0.6,above,anchor=center] (L5A1) {};\draw  [<-] ($(L5A1) +(0mm,0)$)  .. controls ++(-2mm,-3mm) and ++(-1mm,0mm) .. ($(L5A1) +(-4.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=east] {0.31};
+      \draw [solid, *-] (L52)--(L61) node  [pos=0.6,above,anchor=center] (L5A2) {};\draw  [<-] ($(L5A2) +(0mm,0)$)  .. controls ++(2mm,-3mm) and ++(1mm,0mm) .. ($(L5A2) +(4.5mm,-2mm)$) node [outer sep=-1mm,at end, anchor=west] {0.69};
+    \end{scope}
+  \end{pgfonlayer}
+
+  \begin{pgfonlayer}{background}
+    \node [anchor=west] at (5.5,6) {
+      \begin{minipage}[h]{5cm}
+        Grid Tile Weights\\
+        \scriptsize\begin{tabular}{llll}
+                     \toprule
+                     Ecoregion&Tile ID&Area&Weight\\
+                     \cmidrule{1-4}
+                     E1 & T11-20&         18 &1.00\\
+                     \midrule
+                     E2 & T16-18& 8         &1.00\\
+                     \midrule
+                     E3 & T05-11& 4         &0.27\\
+                     E3 & T13-11& 9         &0.60\\
+                     E3 & T21-13 & 2         &0.13\\
+                     \midrule
+                     E4 & T05-05 & 5        &0.50\\
+                     E4 & T06-04 & 5        &0.50\\
+                     \midrule
+                     E5 & T15-03 & 16        &0.55\\
+                     E5 & T21-03 & 3        &0.10\\
+                     E5 & T20-07 & 3        &0.24\\
+                     E5 & T22-05  & 7       &0.10\\
+                     \bottomrule
+                   \end{tabular}
+                 \end{minipage}
+               };
+   \draw [->,thick] (5,6.6) to[out=30,in=-30] (5,8.5);
+   \node [anchor=west] at (5.5,11) { \begin{minipage}[h]{5cm}
+       Ecoregion Weights\\
+       \scriptsize\begin{tabular}{llll}
+                    \toprule
+                    Subregion&Ecoregion&Area&Weight\\
+                    \cmidrule{1-4}
+                    S1 & E1 &         18 &0.69\\
+                    S1 & E2 &         8 &0.31\\
+                    \midrule
+                    S2 & E3 &         15 &0.28\\
+                    S3 & E4 &         10 &0.26\\
+                    S3 & E5 &         29 &0.74\\
+                    \bottomrule
+                  \end{tabular}
+                \end{minipage}
+              };
+   \draw [->,thick] (5,10) to[out=30,in=-30] (5,12);
+
+
+   \node [anchor=west] at (5.5,14.75) {
+     \begin{minipage}[h]{5cm}
+       Subregion Weights\\
+       \scriptsize\begin{tabular}{llll}
+                    \toprule
+                    Region&Subregion&Area&Weight\\
+                    \cmidrule{1-4}
+                    R1 &   S1      &26 &1.00\\
+                    R2 &   S2      &15 &0.28\\
+                    R2 &   S3      &39 &0.72\\
+                    \bottomrule
+                  \end{tabular}
+                \end{minipage}
+              };
+   \draw [->,thick] (5,13.5) to[out=30,in=-30] (5,15.5);
+
+   \node [anchor=west] at (5.5,18.5) {
+     \begin{minipage}[h]{5cm}
+       Region Weights\\
+       \scriptsize\begin{tabular}{lll}
+                    \toprule
+                    Region&Area&Weight\\
+                    \cmidrule{1-3}
+                    R1 &         26 &0.31\\
+                    R2 &         54 &0.69\\
+                    \bottomrule
+                  \end{tabular}
+                \end{minipage}
+              };
+   \draw [->,thick] (5,17.25) to[out=30,in=-30] (5,19.25);
+
+ \end{pgfonlayer}
+\end{tikzpicture}
+
+```
+
 ![](resources/schematic_final_version.png){width=600px}
 
 Schematic diagram illustrating the hierarchical structure relating the
