@@ -1695,7 +1695,8 @@ summary_figures <- function() {
               ## filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
               dplyr::select(type, median, Pl, Pg) |>
               ## mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)") 
-              mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)") 
+              ## mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)") 
+              mutate(column_label = "Percent<br>change in cover<br>(<2010 vs 2020s)") 
             x |>
               filter(type == "frac") |>
               mutate(start = x |> filter(type == "start") |> pull(median),
@@ -1776,7 +1777,8 @@ summary_figures <- function() {
               ## filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
               dplyr::select(type, median, Pl, Pg) |>
               ## mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)")
-              mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)")
+              ## mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)")
+              mutate(column_label = "Percent<br>change in cover<br>(<2010 vs 2020s)") 
             x |>
               filter(type == "frac") |>
               mutate(start = x |> filter(type == "start") |> pull(median),
@@ -1856,7 +1858,8 @@ summary_figures <- function() {
               ## filter(contrast == "Ref2 vs 2020s", type %in% c("frac", "start", "end")) |>
               dplyr::select(type, median, Pl, Pg) |>
               ## mutate(column_label = "Percent<br>change in cover<br>(>2010 vs 2020s)")
-              mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)")
+              ## mutate(column_label = "Percent<br>change in cover<br>(<1998 vs 2020s)")
+              mutate(column_label = "Percent<br>change in cover<br>(<2010 vs 2020s)") 
             x |>
               filter(type == "frac") |>
               mutate(start = x |> filter(type == "start") |> pull(median),
